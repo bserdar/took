@@ -14,10 +14,10 @@ where:
 
 
 Options for oidc-direct-access:
-  -n Name of the configuration
-  -c Client ID
-  -s Client secret
-  -u Server URL, including domain, excluding protocol specific paths
+ * -n Name of the configuration
+ * -c Client ID
+ * -s Client secret
+ * -u Server URL, including domain, excluding protocol specific paths
 
 ```
   took add oidc-direct-access -n prod -c 12345 -s abcdef -u https://myserver/realms/myrealm
