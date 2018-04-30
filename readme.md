@@ -42,7 +42,7 @@ This will print out the active token if there is one, renew if necessary, or ask
 ```
   took token -e prod
   Authentication: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4MVRfd09aY29VekRDUXlhSnNYTXloUjhHQTlranViOEF6d1A3dTgzaDY4In0.eyJqdGkiOiJlY2UyM...
-
+```
 
 Use these additional flags to force renewal or re-authentication:
 
