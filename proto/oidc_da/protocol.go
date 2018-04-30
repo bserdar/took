@@ -68,32 +68,36 @@ func (p *Protocol) FormatToken() string {
 }
 
 // GetToken gets a token
-func (p *Protocol) GetToken(forceNew bool) (string, error) {
+func (p *Protocol) GetToken(opt proto.RefreshOption) (string, error) {
 	// Do we already have a token
 	svc, err := GetServiceInfo(p.Cfg.URL)
 	if err != nil {
 		return "", err
 	}
 	log.Debugf("Service info: %v", svc)
-	if !forceNew && p.Tokens.AccessToken != "" {
-		log.Debugf("There is an access token, validating")
-		token, _ := jwt.Parse(p.Tokens.AccessToken, func(*jwt.Token) (interface{}, error) {
-			return svc.PK, nil
-		})
-		if token != nil {
-			if token.Valid {
-				log.Debug("Token is valid")
-				return p.FormatToken(), nil
-			}
-			log.Debug("Token is not valid")
-			if p.Tokens.RefreshToken != "" {
-				log.Debug("Refreshing token")
-				tokens, err := p.Refresh()
-				if err != nil {
-					return "", err
+	if opt != proto.UseReAuth {
+		if p.Tokens.AccessToken != "" {
+			log.Debugf("There is an access token, validating")
+			token, _ := jwt.Parse(p.Tokens.AccessToken, func(*jwt.Token) (interface{}, error) {
+				return svc.PK, nil
+			})
+			if token != nil {
+				if token.Valid {
+					log.Debug("Token is valid")
+					if opt != proto.UseRefresh {
+						return p.FormatToken(), nil
+					}
+				} else {
+					log.Debug("Token is not valid")
 				}
-				p.Tokens = tokens
-				return p.FormatToken(), nil
+				if p.Tokens.RefreshToken != "" {
+					log.Debug("Refreshing token")
+					tokens, err := p.Refresh()
+					if err == nil {
+						p.Tokens = tokens
+						return p.FormatToken(), nil
+					}
+				}
 			}
 		}
 	}

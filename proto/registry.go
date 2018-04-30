@@ -1,5 +1,14 @@
 package proto
 
+type RefreshOption int
+
+// Constants for how to get the token
+const (
+	UseDefault RefreshOption = iota
+	UseRefresh
+	UseReAuth
+)
+
 // Protocol defines a protocol
 type Protocol interface {
 	// GetDataInstance returns a new data block into which the data
@@ -8,7 +17,7 @@ type Protocol interface {
 	// GetConfigInstance returns a new configuration instance into which the configuration will be unmarshaled
 	GetConfigInstance() interface{}
 	// GetToken returns the token with the given configuration and data blocks
-	GetToken(forceNew bool) (string, error)
+	GetToken(RefreshOption) (string, error)
 }
 
 var protocols = make(map[string]func() Protocol)

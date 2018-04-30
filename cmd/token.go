@@ -11,10 +11,12 @@ import (
 )
 
 var forceNew bool
+var forceRenew bool
 
 func init() {
 	rootCmd.AddCommand(tokenCmd)
 	tokenCmd.Flags().BoolVarP(&forceNew, "force-new", "f", false, "Force new token")
+	tokenCmd.Flags().BoolVarP(&forceRenew, "renew", "r", false, "Force token renewal")
 }
 
 var tokenCmd = &cobra.Command{
@@ -44,7 +46,13 @@ var tokenCmd = &cobra.Command{
 			fmt.Printf("%s\n", err)
 			os.Exit(1)
 		}
-		s, err := protocol.GetToken(forceNew)
+		opt := proto.UseDefault
+		if forceNew {
+			opt = proto.UseReAuth
+		} else if forceRenew {
+			opt = proto.UseRefresh
+		}
+		s, err := protocol.GetToken(opt)
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			os.Exit(1)
