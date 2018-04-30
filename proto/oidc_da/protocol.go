@@ -63,12 +63,16 @@ func init() {
 	})
 }
 
-func (p *Protocol) FormatToken() string {
-	return fmt.Sprintf("%s %s", p.Tokens.Type, p.Tokens.AccessToken)
+func (p *Protocol) FormatToken(out proto.OutputOption) string {
+	switch out {
+	case proto.OutputHeader:
+		return fmt.Sprintf("Authorization: %s %s", p.Tokens.Type, p.Tokens.AccessToken)
+	}
+	return p.Tokens.AccessToken
 }
 
 // GetToken gets a token
-func (p *Protocol) GetToken(opt proto.RefreshOption) (string, error) {
+func (p *Protocol) GetToken(opt proto.RefreshOption, out proto.OutputOption) (string, error) {
 	// Do we already have a token
 	svc, err := GetServiceInfo(p.Cfg.URL)
 	if err != nil {
@@ -85,7 +89,7 @@ func (p *Protocol) GetToken(opt proto.RefreshOption) (string, error) {
 				if token.Valid {
 					log.Debug("Token is valid")
 					if opt != proto.UseRefresh {
-						return p.FormatToken(), nil
+						return p.FormatToken(out), nil
 					}
 				} else {
 					log.Debug("Token is not valid")
@@ -95,7 +99,7 @@ func (p *Protocol) GetToken(opt proto.RefreshOption) (string, error) {
 					tokens, err := p.Refresh()
 					if err == nil {
 						p.Tokens = tokens
-						return p.FormatToken(), nil
+						return p.FormatToken(out), nil
 					}
 				}
 			}
@@ -109,7 +113,7 @@ func (p *Protocol) GetToken(opt proto.RefreshOption) (string, error) {
 		return "", err
 	}
 	p.Tokens = tokens
-	return p.FormatToken(), nil
+	return p.FormatToken(out), nil
 }
 
 // GetNewTokens gets a new token from the server

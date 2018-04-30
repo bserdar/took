@@ -12,11 +12,13 @@ import (
 
 var forceNew bool
 var forceRenew bool
+var writeHeader bool
 
 func init() {
 	rootCmd.AddCommand(tokenCmd)
 	tokenCmd.Flags().BoolVarP(&forceNew, "force-new", "f", false, "Force new token")
 	tokenCmd.Flags().BoolVarP(&forceRenew, "renew", "r", false, "Force token renewal")
+	tokenCmd.Flags().BoolVarP(&writeHeader, "header", "e", false, "Write HTTP header, Authorization: Bearer <token>")
 }
 
 var tokenCmd = &cobra.Command{
@@ -52,7 +54,11 @@ var tokenCmd = &cobra.Command{
 		} else if forceRenew {
 			opt = proto.UseRefresh
 		}
-		s, err := protocol.GetToken(opt)
+		out := proto.OutputToken
+		if writeHeader {
+			out = proto.OutputHeader
+		}
+		s, err := protocol.GetToken(opt, out)
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			os.Exit(1)
