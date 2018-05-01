@@ -17,6 +17,12 @@ const (
 	OutputHeader
 )
 
+type TokenRequest struct {
+	Refresh  RefreshOption
+	Out      OutputOption
+	Username string
+}
+
 // Protocol defines a protocol
 type Protocol interface {
 	// GetDataInstance returns a new data block into which the data
@@ -25,7 +31,7 @@ type Protocol interface {
 	// GetConfigInstance returns a new configuration instance into which the configuration will be unmarshaled
 	GetConfigInstance() interface{}
 	// GetToken returns the token with the given configuration and data blocks
-	GetToken(RefreshOption, OutputOption) (string, error)
+	GetToken(TokenRequest) (string, error)
 }
 
 var protocols = make(map[string]func() Protocol)

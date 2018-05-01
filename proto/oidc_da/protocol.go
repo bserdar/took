@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -21,11 +22,16 @@ type Config struct {
 	ClientSecret string
 	URL          string
 	TokenAPI     string
-	UserName     string
 }
 
 // Data contains the tokens
 type Data struct {
+	Last   string
+	Tokens []TokenData
+}
+
+type TokenData struct {
+	Username     string
 	AccessToken  string
 	RefreshToken string
 	Type         string
@@ -63,57 +69,82 @@ func init() {
 	})
 }
 
-func (p *Protocol) FormatToken(out proto.OutputOption) string {
+func (d Data) findUser(username string) *TokenData {
+	for _, x := range d.Tokens {
+		if x.Username == username {
+			return &x
+		}
+	}
+	return nil
+}
+
+func (t TokenData) FormatToken(out proto.OutputOption) string {
 	switch out {
 	case proto.OutputHeader:
-		return fmt.Sprintf("Authorization: %s %s", p.Tokens.Type, p.Tokens.AccessToken)
+		return fmt.Sprintf("Authorization: %s %s", t.Type, t.AccessToken)
 	}
-	return p.Tokens.AccessToken
+	return t.AccessToken
 }
 
 // GetToken gets a token
-func (p *Protocol) GetToken(opt proto.RefreshOption, out proto.OutputOption) (string, error) {
+func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	// Do we already have a token
 	svc, err := GetServiceInfo(p.Cfg.URL)
 	if err != nil {
 		return "", err
 	}
 	log.Debugf("Service info: %v", svc)
-	if opt != proto.UseReAuth {
-		if p.Tokens.AccessToken != "" {
+
+	// If there is a username, use that. Otherwise, use last
+	userName := request.Username
+	if userName == "" {
+		userName = p.Tokens.Last
+	}
+	if userName == "" {
+		userName, _ := proto.AskUsername()
+		if userName == "" {
+			return "", errors.New("No user")
+		}
+	}
+
+	tok := p.Tokens.findUser(userName)
+	if tok == nil {
+		p.Tokens.Tokens = append(p.Tokens.Tokens, TokenData{})
+		tok = &p.Tokens.Tokens[len(p.Tokens.Tokens)-1]
+	}
+
+	if request.Refresh != proto.UseReAuth {
+		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")
-			token, _ := jwt.Parse(p.Tokens.AccessToken, func(*jwt.Token) (interface{}, error) {
+			token, _ := jwt.Parse(tok.AccessToken, func(*jwt.Token) (interface{}, error) {
 				return svc.PK, nil
 			})
 			if token != nil {
 				if token.Valid {
 					log.Debug("Token is valid")
-					if opt != proto.UseRefresh {
-						return p.FormatToken(out), nil
+					if request.Refresh != proto.UseRefresh {
+						return tok.FormatToken(request.Out), nil
 					}
 				} else {
 					log.Debug("Token is not valid")
 				}
-				if p.Tokens.RefreshToken != "" {
+				if tok.RefreshToken != "" {
 					log.Debug("Refreshing token")
-					tokens, err := p.Refresh()
+					err := p.Refresh(tok)
 					if err == nil {
-						p.Tokens = tokens
-						return p.FormatToken(out), nil
+						return tok.FormatToken(request.Out), nil
 					}
 				}
 			}
 		}
 	}
 
-	username, _ := proto.AskUsername()
 	password, _ := proto.AskPassword()
-	tokens, err := p.GetNewToken(username, password)
+	err = p.GetNewToken(tok, password)
 	if err != nil {
 		return "", err
 	}
-	p.Tokens = tokens
-	return p.FormatToken(out), nil
+	return tok.FormatToken(request.Out), nil
 }
 
 // GetNewTokens gets a new token from the server
@@ -132,33 +163,34 @@ func (p *Protocol) GetTokenAPI() string {
 	return url + tok
 }
 
-func (p *Protocol) GetNewToken(username, password string) (Data, error) {
+func (p *Protocol) GetNewToken(tok *TokenData, password string) error {
 	values := url.Values{}
 	values.Set("client_id", p.Cfg.ClientId)
 	values.Set("client_secret", p.Cfg.ClientSecret)
-	values.Set("username", username)
+	values.Set("username", tok.Username)
 	values.Set("password", password)
 	values.Set("grant_type", "password")
 	log.Debugf("Get new token, url:%s values: %v", p.GetTokenAPI, values)
 	resp, err := http.PostForm(p.GetTokenAPI(), values)
 	if err != nil {
 		log.Debugf("Get new token returns: %s", err)
-		return Data{}, err
+		return err
 	}
 	if resp.StatusCode != 200 {
 		log.Debugf("Get new token returns: %s", resp.Status)
-		return Data{}, fmt.Errorf("Cannot get token: %s", resp.Status)
+		return fmt.Errorf("Cannot get token: %s", resp.Status)
 	}
 	defer resp.Body.Close()
 	var d jsonData
 	err = json.NewDecoder(resp.Body).Decode(&d)
 	if err != nil {
-		return Data{}, err
+		return err
 	}
 	log.Debugf("Tokens: %v", d)
-	return Data{AccessToken: d.AccessToken,
-		RefreshToken: d.RefreshToken,
-		Type:         d.Type}, nil
+	tok.AccessToken = d.AccessToken
+	tok.RefreshToken = d.RefreshToken
+	tok.Type = d.Type
+	return nil
 }
 
 func GetServiceInfo(url string) (ServerData, error) {
@@ -185,31 +217,31 @@ func GetServiceInfo(url string) (ServerData, error) {
 
 }
 
-func (p *Protocol) Refresh() (Data, error) {
+func (p *Protocol) Refresh(tok *TokenData) error {
 	values := url.Values{}
 	values.Set("client_id", p.Cfg.ClientId)
 	values.Set("client_secret", p.Cfg.ClientSecret)
-	values.Set("refresh_token", p.Tokens.RefreshToken)
+	values.Set("refresh_token", tok.RefreshToken)
 	values.Set("grant_type", "refresh_token")
 	log.Debugf("Refresh %s %v", p.GetTokenAPI(), values)
 	resp, err := http.PostForm(p.GetTokenAPI(), values)
 	if err != nil {
 		log.Debugf("Refresh token returns: %s", err)
-		return Data{}, err
+		return err
 	}
 	if resp.StatusCode != 200 {
 		log.Debugf("Refresh token returns: %s", resp.Status)
-		return Data{}, fmt.Errorf("Cannot refresh token: %s", resp.Status)
+		return fmt.Errorf("Cannot refresh token: %s", resp.Status)
 	}
 	defer resp.Body.Close()
 	var d jsonData
 	err = json.NewDecoder(resp.Body).Decode(&d)
 	if err != nil {
-		return Data{}, err
+		return err
 	}
 	log.Debugf("Tokens: %v", d)
-	return Data{AccessToken: d.AccessToken,
-		RefreshToken: d.RefreshToken,
-		Type:         d.Type}, nil
-
+	tok.AccessToken = d.AccessToken
+	tok.RefreshToken = d.RefreshToken
+	tok.Type = d.Type
+	return nil
 }

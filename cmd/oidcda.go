@@ -27,7 +27,7 @@ func init() {
 	oidcConnectDACmd.MarkFlagRequired("clientId")
 	oidcConnectDACmd.Flags().StringVarP(&oidcConnectDACfg.Cfg.ClientSecret, "secret", "s", "", "Client Secret (required)")
 	oidcConnectDACmd.MarkFlagRequired("secret")
-	oidcConnectDACmd.Flags().StringVarP(&oidcConnectDACfg.Cfg.URL, "url", "u", "", "URL (required)")
+	oidcConnectDACmd.Flags().StringVarP(&oidcConnectDACfg.Cfg.URL, "url", "u", "", "Server URL (required)")
 	oidcConnectDACmd.MarkFlagRequired("url")
 	oidcConnectDACmd.Flags().StringVarP(&oidcConnectDACfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 }

@@ -13,6 +13,7 @@ import (
 var forceNew bool
 var forceRenew bool
 var writeHeader bool
+var userName string
 
 func init() {
 	rootCmd.AddCommand(tokenCmd)
@@ -23,9 +24,9 @@ func init() {
 
 var tokenCmd = &cobra.Command{
 	Use:   "token",
-	Short: "Get token",
-	Long:  `Get a token, renew if necessary`,
-	Args:  cobra.MinimumNArgs(1),
+	Short: "Get token <config name> [username]",
+	Long:  `Get a token for a config, renew if necessary`,
+	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		t := viper.GetString(fmt.Sprintf("remotes.%s.type", args[0]))
 		if t == "" {
@@ -58,7 +59,11 @@ var tokenCmd = &cobra.Command{
 		if writeHeader {
 			out = proto.OutputHeader
 		}
-		s, err := protocol.GetToken(opt, out)
+		userName := ""
+		if len(args) == 2 {
+			userName = args[1]
+		}
+		s, err := protocol.GetToken(proto.TokenRequest{Refresh: opt, Out: out, Username: userName})
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			os.Exit(1)
