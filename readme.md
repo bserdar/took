@@ -28,10 +28,11 @@ Options for oidc-direct-access:
 Once the authentication server is defined, use the following command to get a token:
 
 ```
-  took token <name>
+  took token <name> [username]
 ```
-where name is the configuration name used during add.
-This will print out the active token if there is one, renew if necessary, or ask for username/password to get a new token. For example:
+where name is the configuration name used during add. If username is not given,
+it'll be prompted. This will print out the active token if there is one,
+renew if necessary, or ask for username/password to get a new token. For example:
 
 ```
   took token prod
@@ -56,3 +57,13 @@ Re-authenticate:
 ```
   took token -f <name>
 ```
+
+Took can maintain tokens for multiple users. If username is ommitted, the last username will be used:
+
+```
+  took token prod user1
+  <token for user1>
+  took token prod
+  <token for user1>
+```
+

@@ -97,11 +97,13 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 
 	// If there is a username, use that. Otherwise, use last
 	userName := request.Username
+	log.Debugf("Request username: %s", userName)
 	if userName == "" {
 		userName = p.Tokens.Last
+		log.Debugf("Last username: %s", userName)
 	}
 	if userName == "" {
-		userName, _ := proto.AskUsername()
+		userName, _ = proto.AskUsername()
 		if userName == "" {
 			return "", errors.New("No user")
 		}
@@ -111,7 +113,9 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	if tok == nil {
 		p.Tokens.Tokens = append(p.Tokens.Tokens, TokenData{})
 		tok = &p.Tokens.Tokens[len(p.Tokens.Tokens)-1]
+		tok.Username = userName
 	}
+	p.Tokens.Last = tok.Username
 
 	if request.Refresh != proto.UseReAuth {
 		if tok.AccessToken != "" {
