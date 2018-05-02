@@ -70,9 +70,9 @@ func init() {
 }
 
 func (d Data) findUser(username string) *TokenData {
-	for _, x := range d.Tokens {
+	for i, x := range d.Tokens {
 		if x.Username == username {
-			return &x
+			return &d.Tokens[i]
 		}
 	}
 	return nil
@@ -120,9 +120,10 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	if request.Refresh != proto.UseReAuth {
 		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")
-			token, _ := jwt.Parse(tok.AccessToken, func(*jwt.Token) (interface{}, error) {
+			token, e := jwt.Parse(tok.AccessToken, func(*jwt.Token) (interface{}, error) {
 				return svc.PK, nil
 			})
+			log.Debugf("Validation error: %v", e)
 			if token != nil {
 				if token.Valid {
 					log.Debug("Token is valid")
