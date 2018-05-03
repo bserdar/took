@@ -1,19 +1,21 @@
 package oidc_da
 
 import (
-	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"golang.org/x/oauth2"
+	jwt "gopkg.in/square/go-jose.v2/jwt"
+	//	jwt "github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/bserdar/took/proto"
+	"github.com/bserdar/took/proto/oidc"
 )
 
 // Config is the OIDC-Connect direct access configuration
@@ -35,20 +37,6 @@ type TokenData struct {
 	AccessToken  string
 	RefreshToken string
 	Type         string
-}
-
-type ServerData struct {
-	Realm          string `json:"realm"`
-	PublicKey      string `json:"public_key"`
-	TokenService   string `json:"token_service"`
-	AccountService string `json:"account_service"`
-	PK             interface{}
-}
-
-type jsonData struct {
-	AccessToken  string `json:"access_token,omitempty"`
-	RefreshToken string `json:"refresh_token,omitempty"`
-	Type         string `json:"token_type,omitempty"`
 }
 
 type Protocol struct {
@@ -88,13 +76,6 @@ func (t TokenData) FormatToken(out proto.OutputOption) string {
 
 // GetToken gets a token
 func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
-	// Do we already have a token
-	svc, err := GetServiceInfo(p.Cfg.URL)
-	if err != nil {
-		return "", err
-	}
-	log.Debugf("Service info: %v", svc)
-
 	// If there is a username, use that. Otherwise, use last
 	userName := request.Username
 	log.Debugf("Request username: %s", userName)
@@ -120,25 +101,17 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	if request.Refresh != proto.UseReAuth {
 		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")
-			token, e := jwt.Parse(tok.AccessToken, func(*jwt.Token) (interface{}, error) {
-				return svc.PK, nil
-			})
-			log.Debugf("Validation error: %v", e)
-			if token != nil {
-				if token.Valid {
-					log.Debug("Token is valid")
-					if request.Refresh != proto.UseRefresh {
-						return tok.FormatToken(request.Out), nil
-					}
-				} else {
-					log.Debug("Token is not valid")
+			if oidc.Validate(tok.AccessToken, p.Cfg.URL) {
+				log.Debug("Token is valid")
+				if request.Refresh != proto.UseRefresh {
+					return tok.FormatToken(request.Out), nil
 				}
-				if tok.RefreshToken != "" {
-					log.Debug("Refreshing token")
-					err := p.Refresh(tok)
-					if err == nil {
-						return tok.FormatToken(request.Out), nil
-					}
+			}
+			if tok.RefreshToken != "" {
+				log.Debug("Refreshing token")
+				err := p.Refresh(tok)
+				if err == nil {
+					return tok.FormatToken(request.Out), nil
 				}
 			}
 		}
@@ -186,7 +159,7 @@ func (p *Protocol) GetNewToken(tok *TokenData, password string) error {
 		return fmt.Errorf("Cannot get token: %s", resp.Status)
 	}
 	defer resp.Body.Close()
-	var d jsonData
+	var d oauth2.Token
 	err = json.NewDecoder(resp.Body).Decode(&d)
 	if err != nil {
 		return err
@@ -194,32 +167,8 @@ func (p *Protocol) GetNewToken(tok *TokenData, password string) error {
 	log.Debugf("Tokens: %v", d)
 	tok.AccessToken = d.AccessToken
 	tok.RefreshToken = d.RefreshToken
-	tok.Type = d.Type
+	tok.Type = d.TokenType
 	return nil
-}
-
-func GetServiceInfo(url string) (ServerData, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return ServerData{}, err
-	}
-	defer resp.Body.Close()
-	var d ServerData
-	err = json.NewDecoder(resp.Body).Decode(&d)
-	if err != nil {
-		return d, err
-	}
-
-	b, err := base64.StdEncoding.DecodeString(d.PublicKey)
-	if err != nil {
-		return d, err
-	}
-	d.PK, err = x509.ParsePKIXPublicKey(b)
-	if err != nil {
-		return d, err
-	}
-	return d, nil
-
 }
 
 func (p *Protocol) Refresh(tok *TokenData) error {
@@ -239,7 +188,7 @@ func (p *Protocol) Refresh(tok *TokenData) error {
 		return fmt.Errorf("Cannot refresh token: %s", resp.Status)
 	}
 	defer resp.Body.Close()
-	var d jsonData
+	var d oauth2.Token
 	err = json.NewDecoder(resp.Body).Decode(&d)
 	if err != nil {
 		return err
@@ -247,6 +196,6 @@ func (p *Protocol) Refresh(tok *TokenData) error {
 	log.Debugf("Tokens: %v", d)
 	tok.AccessToken = d.AccessToken
 	tok.RefreshToken = d.RefreshToken
-	tok.Type = d.Type
+	tok.Type = d.TokenType
 	return nil
 }

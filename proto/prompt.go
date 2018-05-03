@@ -9,14 +9,18 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-func AskUsername() (string, error) {
-	fmt.Print("User name: ")
+func Ask(prompt string) (string, error) {
+	fmt.Print(prompt)
 	reader := bufio.NewReader(os.Stdin)
 	s, e := reader.ReadString('\n')
 	if s[len(s)-1] == '\n' {
 		return s[:len(s)-1], e
 	}
 	return s, e
+}
+
+func AskUsername() (string, error) {
+	return Ask("User name: ")
 }
 
 func AskPassword() (string, error) {
