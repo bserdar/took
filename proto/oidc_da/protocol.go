@@ -7,12 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
-	"golang.org/x/oauth2"
-	jwt "gopkg.in/square/go-jose.v2/jwt"
-	//	jwt "github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 
 	"github.com/bserdar/took/proto"
 	"github.com/bserdar/took/proto/oidc"
@@ -118,7 +115,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	}
 
 	password, _ := proto.AskPassword()
-	err = p.GetNewToken(tok, password)
+	err := p.GetNewToken(tok, password)
 	if err != nil {
 		return "", err
 	}
@@ -172,30 +169,12 @@ func (p *Protocol) GetNewToken(tok *TokenData, password string) error {
 }
 
 func (p *Protocol) Refresh(tok *TokenData) error {
-	values := url.Values{}
-	values.Set("client_id", p.Cfg.ClientId)
-	values.Set("client_secret", p.Cfg.ClientSecret)
-	values.Set("refresh_token", tok.RefreshToken)
-	values.Set("grant_type", "refresh_token")
-	log.Debugf("Refresh %s %v", p.GetTokenAPI(), values)
-	resp, err := http.PostForm(p.GetTokenAPI(), values)
-	if err != nil {
-		log.Debugf("Refresh token returns: %s", err)
-		return err
-	}
-	if resp.StatusCode != 200 {
-		log.Debugf("Refresh token returns: %s", resp.Status)
-		return fmt.Errorf("Cannot refresh token: %s", resp.Status)
-	}
-	defer resp.Body.Close()
-	var d oauth2.Token
-	err = json.NewDecoder(resp.Body).Decode(&d)
+	t, err := oidc.RefreshToken(p.Cfg.ClientId, p.Cfg.ClientSecret, tok.RefreshToken, p.GetTokenAPI())
 	if err != nil {
 		return err
 	}
-	log.Debugf("Tokens: %v", d)
-	tok.AccessToken = d.AccessToken
-	tok.RefreshToken = d.RefreshToken
-	tok.Type = d.TokenType
+	tok.AccessToken = t.AccessToken
+	tok.RefreshToken = t.RefreshToken
+	tok.Type = t.TokenType
 	return nil
 }

@@ -14,7 +14,8 @@ func Validate(accessToken, serverUrl string) bool {
 	if token != nil {
 		svc, err := GetServerData(serverUrl)
 		if err != nil {
-			return "", err
+			log.Fatalf("Cannot get server info for %s: %s", serverUrl, err)
+			return false
 		}
 		claims := jwt.Claims{}
 		token.Claims(svc.PK, &claims)

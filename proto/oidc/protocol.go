@@ -6,11 +6,9 @@ import (
 	"math/rand"
 	"net/url"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
-	jwt "gopkg.in/square/go-jose.v2/jwt"
 
 	"github.com/bserdar/took/proto"
 )
@@ -78,19 +76,21 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 		userName = p.Tokens.Last
 	}
 
-	var tok *TokenData
-	if userName != "" {
-		tok := p.Tokens.findUser(userName)
-		if tok == nil {
-			p.Tokens.Tokens = append(p.Tokens.Tokens, TokenData{})
-			tok = &p.Tokens.Tokens[len(p.Tokens.Tokens)-1]
-			tok.Username = userName
-		}
-		p.Tokens.Last = tok.Username
+	if userName == "" {
+		log.Fatalf("Username is required for oidc quth")
+		return "", nil
 	}
+	var tok *TokenData
+	tok = p.Tokens.findUser(userName)
+	if tok == nil {
+		p.Tokens.Tokens = append(p.Tokens.Tokens, TokenData{})
+		tok = &p.Tokens.Tokens[len(p.Tokens.Tokens)-1]
+		tok.Username = userName
+	}
+	p.Tokens.Last = tok.Username
 
 	if request.Refresh != proto.UseReAuth {
-		if tok != nil && tok.AccessToken != "" {
+		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")
 			if Validate(tok.AccessToken, p.Cfg.URL) {
 				log.Debug("Token is valid")
@@ -135,12 +135,21 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("TOken:%v\n", token)
+	tok.AccessToken = token.AccessToken
+	tok.RefreshToken = token.RefreshToken
+	tok.Type = token.TokenType
 
-	return "", nil
+	return tok.FormatToken(request.Out), nil
 }
 
 func (p *Protocol) Refresh(tok *TokenData) error {
+	t, err := RefreshToken(p.Cfg.ClientId, p.Cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL())
+	if err != nil {
+		return err
+	}
+	tok.AccessToken = t.AccessToken
+	tok.RefreshToken = t.RefreshToken
+	tok.Type = t.TokenType
 	return nil
 }
 
