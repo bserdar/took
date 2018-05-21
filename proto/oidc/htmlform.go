@@ -1,7 +1,9 @@
 package oidc
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -152,4 +154,29 @@ func FillForm(cfg HTMLFormConfig, page *html.Node) (action string, values url.Va
 		}
 	}
 	return action, values, nil
+}
+
+// FormAuth retrieves a login form from the authURL, parses it, asks
+// credentials, submits the form, and if everything goes fine, returns
+// the redirect URL
+func FormAuth(cfg HTMLFormConfig, authUrl string) *url.URL {
+	var redirectedURL *url.URL
+	node, cookies, err := ReadPage(authUrl)
+	if err == nil && node != nil {
+		action, values, err := FillForm(cfg, node)
+		if err == nil && action != "" && values != nil {
+			request, _ := http.NewRequest(http.MethodPost, action, ioutil.NopCloser(strings.NewReader(values.Encode())))
+			for _, c := range cookies {
+				request.AddCookie(c)
+			}
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			cli := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				redirectedURL = req.URL
+				return errors.New("Redirect")
+			}}
+			response, _ := cli.Do(request)
+			defer response.Body.Close()
+		}
+	}
+	return redirectedURL
 }

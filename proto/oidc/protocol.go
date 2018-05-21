@@ -2,11 +2,8 @@ package oidc
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -148,23 +145,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	authUrl := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
 	var redirectedUrl *url.URL
 	if p.Cfg.Form != nil {
-		node, cookies, err := ReadPage(authUrl)
-		if err == nil && node != nil {
-			action, values, err := FillForm(*p.Cfg.Form, node)
-			if err == nil && action != "" && values != nil {
-				request, _ := http.NewRequest(http.MethodPost, action, ioutil.NopCloser(strings.NewReader(values.Encode())))
-				for _, c := range cookies {
-					request.AddCookie(c)
-				}
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				cli := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
-					redirectedUrl = req.URL
-					return errors.New("Redirect")
-				}}
-				response, _ := cli.Do(request)
-				defer response.Body.Close()
-			}
-		}
+		redirectedUrl = FormAuth(*p.Cfg.Form, authUrl)
 	}
 	if redirectedUrl == nil {
 		fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
