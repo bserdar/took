@@ -15,14 +15,6 @@ import (
 	"github.com/bserdar/took/proto/oidc"
 )
 
-// Config is the OIDC-Connect direct access configuration
-type Config struct {
-	ClientId     string
-	ClientSecret string
-	URL          string
-	TokenAPI     string
-}
-
 // Data contains the tokens
 type Data struct {
 	Last   string
@@ -37,16 +29,17 @@ type TokenData struct {
 }
 
 type Protocol struct {
-	Cfg    Config
-	Tokens Data
+	Cfg      oidc.Config
+	Defaults oidc.Config
+	Tokens   Data
 }
 
 // GetConfigInstance returns a pointer to a new config
 func (p *Protocol) GetConfigInstance() interface{} { return &p.Cfg }
 
-func (p *Protocol) GetDataInstance() interface{} { return &p.Tokens }
+func (p *Protocol) GetConfigDefaultsInstance() interface{} { return &p.Defaults }
 
-var instance Protocol
+func (p *Protocol) GetDataInstance() interface{} { return &p.Tokens }
 
 func init() {
 	proto.Register("oidc-direct-access", func() proto.Protocol {
@@ -71,8 +64,13 @@ func (t TokenData) FormatToken(out proto.OutputOption) string {
 	return t.AccessToken
 }
 
+func (p *Protocol) ConfigWithDefaults() oidc.Config {
+	return p.Cfg.Merge(p.Defaults)
+}
+
 // GetToken gets a token
 func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
+	cfg := p.ConfigWithDefaults()
 	// If there is a username, use that. Otherwise, use last
 	userName := request.Username
 	log.Debugf("Request username: %s", userName)
@@ -98,7 +96,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	if request.Refresh != proto.UseReAuth {
 		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")
-			if oidc.Validate(tok.AccessToken, p.Cfg.URL) {
+			if oidc.Validate(tok.AccessToken, cfg.URL) {
 				log.Debug("Token is valid")
 				if request.Refresh != proto.UseRefresh {
 					return tok.FormatToken(request.Out), nil
@@ -124,8 +122,9 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 
 // GetNewTokens gets a new token from the server
 func (p *Protocol) GetTokenAPI() string {
-	url := p.Cfg.URL
-	tok := p.Cfg.TokenAPI
+	cfg := p.ConfigWithDefaults()
+	url := cfg.URL
+	tok := cfg.TokenAPI
 	if tok == "" {
 		tok = "protocol/openid-connect/token"
 	}
@@ -139,9 +138,10 @@ func (p *Protocol) GetTokenAPI() string {
 }
 
 func (p *Protocol) GetNewToken(tok *TokenData, password string) error {
+	cfg := p.ConfigWithDefaults()
 	values := url.Values{}
-	values.Set("client_id", p.Cfg.ClientId)
-	values.Set("client_secret", p.Cfg.ClientSecret)
+	values.Set("client_id", cfg.ClientId)
+	values.Set("client_secret", cfg.ClientSecret)
 	values.Set("username", tok.Username)
 	values.Set("password", password)
 	values.Set("grant_type", "password")
@@ -169,7 +169,8 @@ func (p *Protocol) GetNewToken(tok *TokenData, password string) error {
 }
 
 func (p *Protocol) Refresh(tok *TokenData) error {
-	t, err := oidc.RefreshToken(p.Cfg.ClientId, p.Cfg.ClientSecret, tok.RefreshToken, p.GetTokenAPI())
+	cfg := p.ConfigWithDefaults()
+	t, err := oidc.RefreshToken(cfg.ClientId, cfg.ClientSecret, tok.RefreshToken, p.GetTokenAPI())
 	if err != nil {
 		return err
 	}

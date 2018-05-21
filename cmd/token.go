@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/bserdar/took/proto"
 )
@@ -28,26 +29,43 @@ var tokenCmd = &cobra.Command{
 	Long:  `Get a token for a config, renew if necessary`,
 	Args:  cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		t := viper.GetString(fmt.Sprintf("remotes.%s.type", args[0]))
-		if t == "" {
-			fmt.Printf("Cannot find %s\n", args[0])
-			os.Exit(1)
+		userRemote, uok := UserCfg.Remotes[args[0]]
+		commonRemote, cok := CommonCfg.Remotes[args[0]]
+		if !uok && !cok {
+			log.Fatalf("Cannot find %s\n", args[0])
+		}
+		t := userRemote.Type
+		if len(t) == 0 {
+			t = commonRemote.Type
+		}
+		if len(t) == 0 {
+			log.Fatalf("Invalid configuration: no type for %s", args[0])
 		}
 		protocol := proto.Get(t)
 		if protocol == nil {
 			fmt.Printf("Cannot find protocol %s\n", t)
 			os.Exit(1)
 		}
-		cfg := protocol.GetConfigInstance()
-		err := viper.UnmarshalKey(fmt.Sprintf("remotes.%s.cfg", args[0]), cfg)
-		if err != nil {
-			panic(err)
+		userCfg := protocol.GetConfigInstance()
+		defaults := protocol.GetConfigDefaultsInstance()
+		if uok {
+			err := mapstructure.Decode(userRemote.Configuration, userCfg)
+			if err != nil {
+				log.Fatalf("Error reading configuration: %s", err)
+			}
+		}
+		if cok {
+			err := mapstructure.Decode(commonRemote.Configuration, defaults)
+			if err != nil {
+				log.Fatalf("Error reading common configuration: %s", err)
+			}
 		}
 		data := protocol.GetDataInstance()
-		err = viper.UnmarshalKey(fmt.Sprintf("remotes.%s.data", args[0]), &data)
-		if err != nil {
-			fmt.Printf("%s\n", err)
-			os.Exit(1)
+		if uok {
+			err := mapstructure.Decode(userRemote.Data, data)
+			if err != nil {
+				log.Fatalf("Error reading data: %s", err)
+			}
 		}
 		opt := proto.UseDefault
 		if forceNew {
@@ -69,10 +87,5 @@ var tokenCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		fmt.Println(s)
-		viper.Set(fmt.Sprintf("remotes.%s.data", args[0]), data)
-		e := viper.WriteConfig()
-		if e != nil {
-			fmt.Printf("%s\n", err)
-			os.Exit(1)
-		}
+		writeUserConfig()
 	}}

@@ -18,14 +18,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bserdar/took/cfg"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var cfgFile string
 var verbose bool
+
+var UserCfg cfg.Configuration
+var CommonCfg cfg.Configuration
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -57,40 +60,32 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
+func getConfigFile() string {
+	if cfgFile == "" {
+		f, err := homedir.Expand("~/.took.yaml")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
-		// If config is not there, initialize it
-		if home != "" {
-			f, _ := os.OpenFile(fmt.Sprintf("%s/.took.yaml", home), os.O_CREATE, 0755)
-			if f != nil {
-				f.Close()
-			}
-		}
-
-		// Search config in home directory with name ".took" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".took")
+		return f
 	}
+	return cfgFile
+}
 
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	viper.ReadInConfig()
-
+// initConfig reads in config file and ENV variables if set.
+func initConfig() {
+	CommonCfg = cfg.ReadCommonConfig()
+	UserCfg = cfg.ReadConfig(getConfigFile())
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	} else {
 		log.SetLevel(log.ErrorLevel)
+	}
+}
+
+func writeUserConfig() {
+	err := cfg.WriteConfig(getConfigFile(), UserCfg)
+	if err != nil {
+		log.Fatalf("Cannot write config: %s", err)
 	}
 }

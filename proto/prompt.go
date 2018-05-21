@@ -24,7 +24,11 @@ func AskUsername() (string, error) {
 }
 
 func AskPassword() (string, error) {
-	fmt.Print("Password: ")
+	return AskPasswordWithPrompt("Password: ")
+}
+
+func AskPasswordWithPrompt(prompt string) (string, error) {
+	fmt.Print(prompt)
 	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 	fmt.Println("")
 	return string(bytePassword), err

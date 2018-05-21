@@ -30,6 +30,8 @@ type Protocol interface {
 	GetDataInstance() interface{}
 	// GetConfigInstance returns a new configuration instance into which the configuration will be unmarshaled
 	GetConfigInstance() interface{}
+	// GetConfigDefaultInstance returns an instance of configuration into which defaults will be unmarshaled
+	GetConfigDefaultsInstance() interface{}
 	// GetToken returns the token with the given configuration and data blocks
 	GetToken(TokenRequest) (string, error)
 }

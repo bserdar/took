@@ -1,10 +1,12 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"log"
 
-	oidc "github.com/bserdar/took/proto/oidc_da"
+	"github.com/spf13/cobra"
+
+	"github.com/bserdar/took/cfg"
+	"github.com/bserdar/took/proto/oidc"
 )
 
 type oidcConnectDA struct {
@@ -34,11 +36,9 @@ var oidcConnectDACmd = &cobra.Command{
 	Short: "Add a new oidc-direct-access configuration",
 	Long:  `Add a new oidc-direct-access configuration`,
 	Run: func(cmd *cobra.Command, args []string) {
-		verifyRemoteUnique(oidcConnectDACfg.Name)
-		setRemoteType(oidcConnectDACfg.Name, "oidc-direct-access")
-		setRemoteConfig(oidcConnectDACfg.Name, oidcConnectDACfg.Cfg)
-		e := viper.WriteConfig()
-		if e != nil {
-			panic(e)
+		if _, ok := UserCfg.Remotes[oidcConnectDACfg.Name]; ok {
+			log.Fatalf("Remote %s already exists", oidcConnectDACfg.Name)
 		}
+		UserCfg.Remotes[oidcConnectDACfg.Name] = cfg.Remote{Type: "oidc-direct-access", Configuration: oidcConnectDACfg.Cfg}
+		writeUserConfig()
 	}}

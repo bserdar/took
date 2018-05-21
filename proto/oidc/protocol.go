@@ -2,8 +2,11 @@ package oidc
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -20,6 +23,7 @@ type Config struct {
 	CallbackURL  string
 	TokenAPI     string
 	AuthAPI      string
+	Form         *HTMLFormConfig
 }
 
 // Data contains the tokens
@@ -36,8 +40,9 @@ type TokenData struct {
 }
 
 type Protocol struct {
-	Cfg    Config
-	Tokens Data
+	Cfg      Config
+	Defaults Config
+	Tokens   Data
 }
 
 func (d Data) findUser(username string) *TokenData {
@@ -49,10 +54,32 @@ func (d Data) findUser(username string) *TokenData {
 	return nil
 }
 
+// Merge sets the unset fields of c from defaults
+func (c Config) Merge(defaults Config) Config {
+	wdef := func(s, def string) string {
+		if len(s) > 0 {
+			return s
+		}
+		return def
+	}
+	return Config{ClientId: wdef(c.ClientId, defaults.ClientId),
+		ClientSecret: wdef(c.ClientSecret, defaults.ClientSecret),
+		URL:          wdef(c.URL, defaults.URL),
+		CallbackURL:  wdef(c.CallbackURL, defaults.CallbackURL),
+		TokenAPI:     wdef(c.TokenAPI, defaults.TokenAPI),
+		AuthAPI:      wdef(c.AuthAPI, defaults.AuthAPI)}
+}
+
 // GetConfigInstance returns a pointer to a new config
 func (p *Protocol) GetConfigInstance() interface{} { return &p.Cfg }
 
+func (p *Protocol) GetConfigDefaultsInstance() interface{} { return &p.Defaults }
+
 func (p *Protocol) GetDataInstance() interface{} { return &p.Tokens }
+
+func (p *Protocol) ConfigWithDefaults() Config {
+	return p.Cfg.Merge(p.Defaults)
+}
 
 func init() {
 	proto.Register("oidc-auth", func() proto.Protocol {
@@ -70,6 +97,7 @@ func (t TokenData) FormatToken(out proto.OutputOption) string {
 
 // GetToken gets a token
 func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
+	cfg := p.ConfigWithDefaults()
 	// If there is a username, use that. Otherwise, use last
 	userName := request.Username
 	if userName == "" {
@@ -92,7 +120,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	if request.Refresh != proto.UseReAuth {
 		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")
-			if Validate(tok.AccessToken, p.Cfg.URL) {
+			if Validate(tok.AccessToken, cfg.URL) {
 				log.Debug("Token is valid")
 				if request.Refresh != proto.UseRefresh {
 					return tok.FormatToken(request.Out), nil
@@ -109,32 +137,55 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 	}
 
 	conf := &oauth2.Config{
-		ClientID:     p.Cfg.ClientId,
-		ClientSecret: p.Cfg.ClientSecret,
+		ClientID:     cfg.ClientId,
+		ClientSecret: cfg.ClientSecret,
 		Scopes:       []string{"openid"},
-		RedirectURL:  p.Cfg.CallbackURL,
+		RedirectURL:  cfg.CallbackURL,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  p.GetAuthURL(),
 			TokenURL: p.GetTokenURL()}}
 	state := fmt.Sprintf("%x", rand.Uint64())
 	authUrl := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
-	fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
-	inUrl, err := proto.Ask("After authentication, copy/paste the URL here:")
-	if err != nil {
-		log.Fatalf("%s", err)
+	var redirectedUrl *url.URL
+	if p.Cfg.Form != nil {
+		node, cookies, err := ReadPage(authUrl)
+		if err == nil && node != nil {
+			action, values, err := FillForm(*p.Cfg.Form, node)
+			if err == nil && action != "" && values != nil {
+				request, _ := http.NewRequest(http.MethodPost, action, ioutil.NopCloser(strings.NewReader(values.Encode())))
+				for _, c := range cookies {
+					request.AddCookie(c)
+				}
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				cli := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
+					redirectedUrl = req.URL
+					return errors.New("Redirect")
+				}}
+				response, _ := cli.Do(request)
+				defer response.Body.Close()
+			}
+		}
 	}
-	redirectedUrl, err := url.Parse(inUrl)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	if state != redirectedUrl.Query().Get("state") {
-		log.Fatal("Invalid state")
+	if redirectedUrl == nil {
+		fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
+		inUrl, err := proto.Ask("After authentication, copy/paste the URL here:")
+		if err != nil {
+			log.Fatalf("%s", err)
+		}
+		redirectedUrl, err = url.Parse(inUrl)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		if state != redirectedUrl.Query().Get("state") {
+			log.Fatal("Invalid state")
+		}
 	}
 
 	token, err := conf.Exchange(context.Background(), redirectedUrl.Query().Get("code"))
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	tok.AccessToken = token.AccessToken
 	tok.RefreshToken = token.RefreshToken
 	tok.Type = token.TokenType
@@ -143,7 +194,8 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 }
 
 func (p *Protocol) Refresh(tok *TokenData) error {
-	t, err := RefreshToken(p.Cfg.ClientId, p.Cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL())
+	cfg := p.ConfigWithDefaults()
+	t, err := RefreshToken(cfg.ClientId, cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL())
 	if err != nil {
 		return err
 	}
@@ -154,19 +206,21 @@ func (p *Protocol) Refresh(tok *TokenData) error {
 }
 
 func (p *Protocol) GetTokenURL() string {
-	token := p.Cfg.TokenAPI
+	cfg := p.ConfigWithDefaults()
+	token := cfg.TokenAPI
 	if token == "" {
 		token = "protocol/openid-connect/token"
 	}
-	return combine(p.Cfg.URL, token)
+	return combine(cfg.URL, token)
 }
 
 func (p *Protocol) GetAuthURL() string {
-	auth := p.Cfg.AuthAPI
+	cfg := p.ConfigWithDefaults()
+	auth := cfg.AuthAPI
 	if auth == "" {
 		auth = "protocol/openid-connect/auth"
 	}
-	return combine(p.Cfg.URL, auth)
+	return combine(cfg.URL, auth)
 }
 
 func combine(base, suffix string) string {

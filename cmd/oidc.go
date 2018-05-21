@@ -1,9 +1,11 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"log"
 
+	"github.com/spf13/cobra"
+
+	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/proto/oidc"
 )
 
@@ -37,11 +39,9 @@ var oidcConnectCmd = &cobra.Command{
 	Short: "Add a new oidc configuration using authorization code flow",
 	Long:  `Add a new oidc configuration using authorization code flow`,
 	Run: func(cmd *cobra.Command, args []string) {
-		verifyRemoteUnique(oidcCfg.Name)
-		setRemoteType(oidcCfg.Name, "oidc-auth")
-		setRemoteConfig(oidcCfg.Name, oidcCfg.Cfg)
-		e := viper.WriteConfig()
-		if e != nil {
-			panic(e)
+		if _, ok := UserCfg.Remotes[oidcCfg.Name]; ok {
+			log.Fatalf("Remote %s already exists", oidcCfg.Name)
 		}
+		UserCfg.Remotes[oidcCfg.Name] = cfg.Remote{Type: "oidc-auth", Configuration: oidcCfg.Cfg}
+		writeUserConfig()
 	}}
