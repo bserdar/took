@@ -32,8 +32,10 @@ type Protocol interface {
 	GetConfigInstance() interface{}
 	// GetConfigDefaultInstance returns an instance of configuration into which defaults will be unmarshaled
 	GetConfigDefaultsInstance() interface{}
-	// GetToken returns the token with the given configuration and data blocks
-	GetToken(TokenRequest) (string, error)
+	// GetToken returns the token with the given configuration and
+	// data blocks. Returns the new copy of data block for
+	// configuration
+	GetToken(TokenRequest) (string, interface{}, error)
 }
 
 var protocols = make(map[string]func() Protocol)

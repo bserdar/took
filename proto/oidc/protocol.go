@@ -14,13 +14,14 @@ import (
 )
 
 type Config struct {
-	ClientId     string
-	ClientSecret string
-	URL          string
-	CallbackURL  string
-	TokenAPI     string
-	AuthAPI      string
-	Form         *HTMLFormConfig
+	ClientId      string
+	ClientSecret  string
+	URL           string
+	CallbackURL   string
+	TokenAPI      string
+	AuthAPI       string
+	PasswordGrant bool
+	Form          *HTMLFormConfig
 }
 
 // Data contains the tokens
@@ -59,12 +60,19 @@ func (c Config) Merge(defaults Config) Config {
 		}
 		return def
 	}
-	return Config{ClientId: wdef(c.ClientId, defaults.ClientId),
+	ret := Config{ClientId: wdef(c.ClientId, defaults.ClientId),
 		ClientSecret: wdef(c.ClientSecret, defaults.ClientSecret),
 		URL:          wdef(c.URL, defaults.URL),
 		CallbackURL:  wdef(c.CallbackURL, defaults.CallbackURL),
 		TokenAPI:     wdef(c.TokenAPI, defaults.TokenAPI),
 		AuthAPI:      wdef(c.AuthAPI, defaults.AuthAPI)}
+	ret.PasswordGrant = c.PasswordGrant
+	if c.Form != nil {
+		ret.Form = c.Form
+	} else {
+		ret.Form = defaults.Form
+	}
+	return ret
 }
 
 // GetConfigInstance returns a pointer to a new config
@@ -93,8 +101,9 @@ func (t TokenData) FormatToken(out proto.OutputOption) string {
 }
 
 // GetToken gets a token
-func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
+func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, error) {
 	cfg := p.ConfigWithDefaults()
+
 	// If there is a username, use that. Otherwise, use last
 	userName := request.Username
 	if userName == "" {
@@ -103,7 +112,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 
 	if userName == "" {
 		log.Fatalf("Username is required for oidc quth")
-		return "", nil
+		return "", nil, nil
 	}
 	var tok *TokenData
 	tok = p.Tokens.findUser(userName)
@@ -120,14 +129,14 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 			if Validate(tok.AccessToken, cfg.URL) {
 				log.Debug("Token is valid")
 				if request.Refresh != proto.UseRefresh {
-					return tok.FormatToken(request.Out), nil
+					return tok.FormatToken(request.Out), p.Tokens, nil
 				}
 			}
 			if tok.RefreshToken != "" {
 				log.Debug("Refreshing token")
 				err := p.Refresh(tok)
 				if err == nil {
-					return tok.FormatToken(request.Out), nil
+					return tok.FormatToken(request.Out), p.Tokens, nil
 				}
 			}
 		}
@@ -142,36 +151,48 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, error) {
 			AuthURL:  p.GetAuthURL(),
 			TokenURL: p.GetTokenURL()}}
 	state := fmt.Sprintf("%x", rand.Uint64())
-	authUrl := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
-	var redirectedUrl *url.URL
-	if p.Cfg.Form != nil {
-		redirectedUrl = FormAuth(*p.Cfg.Form, authUrl)
-	}
-	if redirectedUrl == nil {
-		fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
-		inUrl, err := proto.Ask("After authentication, copy/paste the URL here:")
+	var token *oauth2.Token
+	var err error
+	if cfg.PasswordGrant {
+		password, _ := proto.AskPassword()
+		token, err = conf.PasswordCredentialsToken(context.Background(), userName, password)
 		if err != nil {
-			log.Fatalf("%s", err)
+			log.Fatal(err)
 		}
-		redirectedUrl, err = url.Parse(inUrl)
+	} else {
+		authUrl := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+		var redirectedUrl *url.URL
+		if cfg.Form != nil {
+			redirectedUrl = FormAuth(*cfg.Form, authUrl)
+			if redirectedUrl == nil {
+				fmt.Printf("Authentication failed\n")
+			}
+		}
+		if redirectedUrl == nil {
+			fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
+			inUrl, err := proto.Ask("After authentication, copy/paste the URL here:")
+			if err != nil {
+				log.Fatalf("%s", err)
+			}
+			redirectedUrl, err = url.Parse(inUrl)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			if state != redirectedUrl.Query().Get("state") {
+				log.Fatal("Invalid state")
+			}
+		}
+		token, err = conf.Exchange(context.Background(), redirectedUrl.Query().Get("code"))
 		if err != nil {
-			log.Fatal(err.Error())
+			log.Fatal(err)
 		}
-		if state != redirectedUrl.Query().Get("state") {
-			log.Fatal("Invalid state")
-		}
-	}
-
-	token, err := conf.Exchange(context.Background(), redirectedUrl.Query().Get("code"))
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	tok.AccessToken = token.AccessToken
 	tok.RefreshToken = token.RefreshToken
 	tok.Type = token.TokenType
 
-	return tok.FormatToken(request.Out), nil
+	return tok.FormatToken(request.Out), p.Tokens, nil
 }
 
 func (p *Protocol) Refresh(tok *TokenData) error {

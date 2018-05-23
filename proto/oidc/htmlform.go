@@ -20,12 +20,12 @@ type HTMLFormConfig struct {
 }
 
 type FieldConfig struct {
-	InputName string `json:"input" yaml:"input"`
+	Input string `json:"input" yaml:"input"`
 	// If non-empty, will ask for value
 	Prompt   string `json:"prompt,omitempty" yaml:"prompt,omitempty"`
 	Password bool   `json:"password" yaml:"password"`
 	// If non-empty, the default value
-	Value string `json:"default,omitempty" yaml:"default,omitempty"`
+	Value string `json:"value,omitempty" yaml:"value,omitempty"`
 }
 
 // ReadPage reads the contents of the page
@@ -116,7 +116,7 @@ func itrForms(formID string, requiredFields []string, node *html.Node) (string, 
 func FillForm(cfg HTMLFormConfig, page *html.Node) (action string, values url.Values, err error) {
 	requiredFields := make([]string, 0)
 	for _, f := range cfg.Fields {
-		requiredFields = append(requiredFields, f.InputName)
+		requiredFields = append(requiredFields, f.Input)
 	}
 	action, values = itrForms(cfg.ID, requiredFields, page)
 	if action != "" {
@@ -132,7 +132,7 @@ func FillForm(cfg HTMLFormConfig, page *html.Node) (action string, values url.Va
 					if err != nil {
 						return
 					}
-					values.Set(field.InputName, v)
+					values.Set(field.Input, v)
 				} else {
 					defaultValue := field.Value
 					if field.Password {
@@ -146,10 +146,10 @@ func FillForm(cfg HTMLFormConfig, page *html.Node) (action string, values url.Va
 					if len(val) == 0 {
 						val = field.Value
 					}
-					values.Set(field.InputName, val)
+					values.Set(field.Input, val)
 				}
 			} else {
-				values.Set(field.InputName, field.Value)
+				values.Set(field.Input, field.Value)
 			}
 		}
 	}

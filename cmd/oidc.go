@@ -36,11 +36,12 @@ func init() {
 		cmd.MarkFlagRequired("callback-url")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
+		cmd.Flags().BoolVarP(&oidcCfg.Cfg.PasswordGrant, "pwd", "p", false, "Password grant")
 		cmd.Flags().StringVarP(&oidcCfg.form, "form", "F", "", `Login form parameters, json document
   { "id":<formId>,
     "fields": [
       {
-        "name":<Name of the input field>,
+        "input":<Name of the input field>,
         "prompt": <String to prompt. If empty, value of the field in form is used>,
         "password": true|false,
         "value": <default value, omit field if none>

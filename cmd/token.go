@@ -8,6 +8,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 
+	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/proto"
 )
 
@@ -81,11 +82,13 @@ var tokenCmd = &cobra.Command{
 		if len(args) == 2 {
 			userName = args[1]
 		}
-		s, err := protocol.GetToken(proto.TokenRequest{Refresh: opt, Out: out, Username: userName})
+		s, data, err := protocol.GetToken(proto.TokenRequest{Refresh: opt, Out: out, Username: userName})
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			os.Exit(1)
 		}
 		fmt.Println(s)
+		UserCfg.Remotes[args[0]] = cfg.Remote{Type: userRemote.Type, Configuration: userRemote.Configuration,
+			Data: data}
 		writeUserConfig()
 	}}
