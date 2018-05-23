@@ -13,8 +13,8 @@ type Configuration struct {
 
 type Remote struct {
 	Type          string      `yaml:"type"`
-	Configuration interface{} `yaml:"cfg"`
-	Data          interface{} `yaml:"data"`
+	Configuration interface{} `yaml:"cfg,omitempty"`
+	Data          interface{} `yaml:"data,omitempty"`
 }
 
 // ReadConfig reads the cfgFile.
@@ -40,6 +40,9 @@ func readConfig(cfgFile string) (Configuration, error) {
 	err = yml.Unmarshal(data, &config)
 	if err != nil {
 		return Configuration{}, err
+	}
+	if config.Remotes == nil {
+		config.Remotes = make(map[string]Remote)
 	}
 
 	return config, nil

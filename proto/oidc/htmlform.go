@@ -13,17 +13,17 @@ import (
 )
 
 type HTMLFormConfig struct {
-	ID     string
-	Fields []FieldConfig
+	ID     string        `json:"id,omitempty" yaml:"id,omitempty"`
+	Fields []FieldConfig `json:"fields,omitempty" yaml:"fields,omitempty"`
 }
 
 type FieldConfig struct {
-	InputName string
+	InputName string `json:"input" yaml:"input"`
 	// If non-empty, will ask for value
-	Prompt   string
-	Password bool
+	Prompt   string `json:"prompt,omitempty" yaml:"prompt,omitempty"`
+	Password bool   `json:"password" yaml:"password"`
 	// If non-empty, the default value
-	Value string
+	Value string `json:"default,omitempty" yaml:"default,omitempty"`
 }
 
 // ReadPage reads the contents of the page
