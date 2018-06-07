@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// RefreshToken gets a new token using the refresh token
 func RefreshToken(clientId, clientSecret, refreshToken, tokenURL string) (oauth2.Token, error) {
 	values := url.Values{}
 	values.Set("client_id", clientId)

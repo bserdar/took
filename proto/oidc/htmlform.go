@@ -128,10 +128,7 @@ func FillForm(cfg HTMLFormConfig, page *html.Node) (action string, values url.Va
 			if field.Prompt != "" {
 				if field.Value == "" {
 					var v string
-					v, err = ask(fmt.Sprintf("%s:", field.Prompt))
-					if err != nil {
-						return
-					}
+					v = ask(fmt.Sprintf("%s:", field.Prompt))
 					values.Set(field.Input, v)
 				} else {
 					defaultValue := field.Value
@@ -139,10 +136,7 @@ func FillForm(cfg HTMLFormConfig, page *html.Node) (action string, values url.Va
 						defaultValue = "***"
 					}
 					var val string
-					val, err = ask(fmt.Sprintf("%s (%s):", field.Prompt, defaultValue))
-					if err != nil {
-						return
-					}
+					val = ask(fmt.Sprintf("%s (%s):", field.Prompt, defaultValue))
 					if len(val) == 0 {
 						val = field.Value
 					}

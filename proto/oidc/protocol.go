@@ -154,7 +154,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	var token *oauth2.Token
 	var err error
 	if cfg.PasswordGrant {
-		password, _ := proto.AskPassword()
+		password := proto.AskPassword()
 		token, err = conf.PasswordCredentialsToken(context.Background(), userName, password)
 		if err != nil {
 			log.Fatal(err)
@@ -170,10 +170,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 		}
 		if redirectedUrl == nil {
 			fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
-			inUrl, err := proto.Ask("After authentication, copy/paste the URL here:")
-			if err != nil {
-				log.Fatalf("%s", err)
-			}
+			inUrl := proto.Ask("After authentication, copy/paste the URL here:")
 			redirectedUrl, err = url.Parse(inUrl)
 			if err != nil {
 				log.Fatal(err.Error())
