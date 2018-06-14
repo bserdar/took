@@ -88,7 +88,7 @@ You can define this structure with the -F flag:
 
 ```
 took add oidc -n myapi -s 123 -b http://callback -c abc -u https://myserver \
- -F '{"id":"kc-form-login","fields":[{"input":"username","prompt":"User name"},\
+ -F '{"id":"kc-form-login","usernameField":"username","passwordField":"password","fields":[{"input":"username","prompt":"User name"},\
     {"input":"password","prompt":"Password","password":true}]}'
 ```
 

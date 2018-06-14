@@ -154,7 +154,12 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	var token *oauth2.Token
 	var err error
 	if cfg.PasswordGrant {
-		password := proto.AskPassword()
+		var password string
+		if len(request.Password) > 0 {
+			password = request.Password
+		} else {
+			password = proto.AskPassword()
+		}
 		token, err = conf.PasswordCredentialsToken(context.Background(), userName, password)
 		if err != nil {
 			log.Fatal(err)
@@ -163,7 +168,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 		authUrl := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
 		var redirectedUrl *url.URL
 		if cfg.Form != nil {
-			redirectedUrl = FormAuth(*cfg.Form, authUrl)
+			redirectedUrl = FormAuth(*cfg.Form, authUrl, userName, request.Password)
 			if redirectedUrl == nil {
 				fmt.Printf("Authentication failed\n")
 			}

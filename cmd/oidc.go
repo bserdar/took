@@ -39,6 +39,8 @@ func init() {
 		cmd.Flags().BoolVarP(&oidcCfg.Cfg.PasswordGrant, "pwd", "p", false, "Password grant")
 		cmd.Flags().StringVarP(&oidcCfg.form, "form", "F", "", `Login form parameters, json document
   { "id":<formId>,
+    "username": <name of the fields[] element for username>,
+    "password": <name of the fields[] element for password>,
     "fields": [
       {
         "input":<Name of the input field>,

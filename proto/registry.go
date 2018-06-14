@@ -21,6 +21,7 @@ type TokenRequest struct {
 	Refresh  RefreshOption
 	Out      OutputOption
 	Username string
+	Password string
 }
 
 // Protocol defines a protocol

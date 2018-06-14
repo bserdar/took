@@ -26,9 +26,9 @@ func init() {
 
 var tokenCmd = &cobra.Command{
 	Use:   "token",
-	Short: "Get token <config name> [username]",
+	Short: "Get token <config name> [username] [password]",
 	Long:  `Get a token for a config, renew if necessary`,
-	Args:  cobra.RangeArgs(1, 2),
+	Args:  cobra.RangeArgs(1, 3),
 	Run: func(cmd *cobra.Command, args []string) {
 		userRemote, uok := UserCfg.Remotes[args[0]]
 		commonRemote, cok := CommonCfg.Remotes[args[0]]
@@ -79,10 +79,14 @@ var tokenCmd = &cobra.Command{
 			out = proto.OutputHeader
 		}
 		userName := ""
-		if len(args) == 2 {
+		password := ""
+		if len(args) > 1 {
 			userName = args[1]
 		}
-		s, data, err := protocol.GetToken(proto.TokenRequest{Refresh: opt, Out: out, Username: userName})
+		if len(args) > 2 {
+			password = args[2]
+		}
+		s, data, err := protocol.GetToken(proto.TokenRequest{Refresh: opt, Out: out, Username: userName, Password: password})
 		if err != nil {
 			fmt.Printf("%s\n", err)
 			os.Exit(1)
