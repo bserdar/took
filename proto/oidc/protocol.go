@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -95,7 +96,8 @@ func init() {
 func (t TokenData) FormatToken(out proto.OutputOption) string {
 	switch out {
 	case proto.OutputHeader:
-		return fmt.Sprintf("Authorization: %s %s", t.Type, t.AccessToken)
+		return fmt.Sprintf("Authorization: %s %s", http.CanonicalHeaderKey(t.Type),
+			t.AccessToken)
 	}
 	return t.AccessToken
 }
