@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -17,6 +18,36 @@ type oidcConnect struct {
 }
 
 var oidcCfg oidcConnect
+
+var oidcConnectWizard = []SetupStep{
+	{Prompt: "Server URL:", Parse: func(in string) error {
+		if len(in) == 0 {
+			return fmt.Errorf("Server URL is required")
+		}
+		oidcCfg.Cfg.URL = in
+		return nil
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).URL }},
+	{Prompt: "Client ID:", Parse: func(in string) error {
+		if len(in) == 0 {
+			return fmt.Errorf("Client id is required")
+		}
+		oidcCfg.Cfg.ClientId = in
+		return nil
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).ClientId }},
+	{Prompt: "Client secret:", Parse: func(in string) error {
+		if len(in) == 0 {
+			return fmt.Errorf("Client secret is required")
+		}
+		oidcCfg.Cfg.ClientSecret = in
+		return nil
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).ClientSecret }},
+	{Prompt: "Callback URL:", Parse: func(in string) error {
+		if len(in) == 0 {
+			return fmt.Errorf("Callback URL is required")
+		}
+		oidcCfg.Cfg.CallbackURL = in
+		return nil
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).CallbackURL }}}
 
 func init() {
 	addCmd.AddCommand(oidcConnectCmd)

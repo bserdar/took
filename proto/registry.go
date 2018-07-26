@@ -54,3 +54,14 @@ func Get(name string) Protocol {
 	}
 	return nil
 }
+
+// ProtocolNames returns supported protocol names
+func ProtocolNames() []string {
+	ret := make([]string, len(protocols))
+	i := 0
+	for k := range protocols {
+		ret[i] = k
+		i++
+	}
+	return ret
+}
