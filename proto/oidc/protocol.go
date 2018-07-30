@@ -91,6 +91,9 @@ func init() {
 	proto.Register("oidc-auth", func() proto.Protocol {
 		return &Protocol{}
 	})
+	proto.Register("oidc", func() proto.Protocol {
+		return &Protocol{}
+	})
 }
 
 func (t TokenData) FormatToken(out proto.OutputOption) string {

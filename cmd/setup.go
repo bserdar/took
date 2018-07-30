@@ -133,7 +133,7 @@ var setupCmd = &cobra.Command{
 		var wiz []SetupStep
 		var command *cobra.Command
 		switch protocolName {
-		case "oidc-auth":
+		case "oidc-auth", "oidc":
 			wiz = oidcConnectWizard
 			command = oidcConnectCmd
 			oidcCfg.Name = cfgName
