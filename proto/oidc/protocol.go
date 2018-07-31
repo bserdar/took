@@ -158,6 +158,8 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	state := fmt.Sprintf("%x", rand.Uint64())
 	var token *oauth2.Token
 	var err error
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())
 	if cfg.PasswordGrant {
 		var password string
 		if len(request.Password) > 0 {
@@ -165,7 +167,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 		} else {
 			password = proto.AskPassword()
 		}
-		token, err = conf.PasswordCredentialsToken(context.Background(), userName, password)
+		token, err = conf.PasswordCredentialsToken(ctx, userName, password)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -189,7 +191,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 				log.Fatal("Invalid state")
 			}
 		}
-		token, err = conf.Exchange(context.Background(), redirectedUrl.Query().Get("code"))
+		token, err = conf.Exchange(ctx, redirectedUrl.Query().Get("code"))
 		if err != nil {
 			log.Fatal(err)
 		}
