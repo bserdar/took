@@ -3,11 +3,12 @@ package oidc
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+
+	"github.com/bserdar/took/proto"
 )
 
 // RefreshToken gets a new token using the refresh token
@@ -18,7 +19,7 @@ func RefreshToken(clientId, clientSecret, refreshToken, tokenURL string) (oauth2
 	values.Set("refresh_token", refreshToken)
 	values.Set("grant_type", "refresh_token")
 	log.Debugf("Refresh %s %v", tokenURL, values)
-	resp, err := http.PostForm(tokenURL, values)
+	resp, err := proto.HTTPPostForm(tokenURL, values)
 	if err != nil {
 		log.Debugf("Refresh token returns: %s", err)
 		return oauth2.Token{}, err

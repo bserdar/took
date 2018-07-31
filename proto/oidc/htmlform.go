@@ -35,7 +35,7 @@ type FieldConfig struct {
 
 // ReadPage reads the contents of the page
 func ReadPage(url string) (*html.Node, []*http.Cookie, error) {
-	resp, err := http.Get(url)
+	resp, err := proto.HTTPGet(url)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -177,10 +177,11 @@ func FormAuth(cfg HTMLFormConfig, authUrl string, userName, password string) *ur
 				request.AddCookie(c)
 			}
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			cli := &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			cli := proto.GetHTTPClient()
+			cli.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 				redirectedURL = req.URL
 				return errors.New("Redirect")
-			}}
+			}
 			response, _ := cli.Do(request)
 			defer response.Body.Close()
 		}

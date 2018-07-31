@@ -17,10 +17,13 @@ var forceRenew bool
 var writeHeader bool
 var userName string
 
+var insecureTLS bool
+
 func init() {
 	rootCmd.AddCommand(tokenCmd)
 	tokenCmd.Flags().BoolVarP(&forceNew, "force-new", "f", false, "Force new token")
 	tokenCmd.Flags().BoolVarP(&forceRenew, "renew", "r", false, "Force token renewal")
+	tokenCmd.Flags().BoolVarP(&proto.InsecureTLS, "insecure", "k", false, "Insecure TLS (do not validate certificates)")
 	tokenCmd.Flags().BoolVarP(&writeHeader, "header", "e", false, "Write HTTP header, Authorization: Bearer <token>")
 }
 

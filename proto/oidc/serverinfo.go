@@ -4,7 +4,8 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"net/http"
+
+	"github.com/bserdar/took/proto"
 )
 
 // ServerData contains the OIDC server information
@@ -18,7 +19,7 @@ type ServerData struct {
 
 // GetServerData retrieves server data from the auth server
 func GetServerData(url string) (ServerData, error) {
-	resp, err := http.Get(url)
+	resp, err := proto.HTTPGet(url)
 	if err != nil {
 		return ServerData{}, err
 	}
