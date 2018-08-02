@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/url"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // If InsecureTLS is set to true, TLS calls won't check certs
@@ -25,5 +27,6 @@ func HTTPGet(url string) (*http.Response, error) {
 }
 
 func HTTPPostForm(url string, data url.Values) (*http.Response, error) {
+	log.Debugf("Post %s %s", url, data.Encode())
 	return GetHTTPClient().PostForm(url, data)
 }

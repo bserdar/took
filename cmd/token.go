@@ -20,14 +20,14 @@ var userName string
 var insecureTLS bool
 
 func init() {
-	rootCmd.AddCommand(tokenCmd)
-	tokenCmd.Flags().BoolVarP(&forceNew, "force-new", "f", false, "Force new token")
-	tokenCmd.Flags().BoolVarP(&forceRenew, "renew", "r", false, "Force token renewal")
-	tokenCmd.Flags().BoolVarP(&proto.InsecureTLS, "insecure", "k", false, "Insecure TLS (do not validate certificates)")
-	tokenCmd.Flags().BoolVarP(&writeHeader, "header", "e", false, "Write HTTP header, Authorization: Bearer <token>")
+	RootCmd.AddCommand(TokenCmd)
+	TokenCmd.Flags().BoolVarP(&forceNew, "force-new", "f", false, "Force new token")
+	TokenCmd.Flags().BoolVarP(&forceRenew, "renew", "r", false, "Force token renewal")
+	TokenCmd.Flags().BoolVarP(&proto.InsecureTLS, "insecure", "k", false, "Insecure TLS (do not validate certificates)")
+	TokenCmd.Flags().BoolVarP(&writeHeader, "header", "e", false, "Write HTTP header, Authorization: Bearer <token>")
 }
 
-var tokenCmd = &cobra.Command{
+var TokenCmd = &cobra.Command{
 	Use:   "token",
 	Short: "Get token <config name> [username] [password]",
 	Long:  `Get a token for a config, renew if necessary`,
@@ -97,5 +97,5 @@ var tokenCmd = &cobra.Command{
 		fmt.Println(s)
 		UserCfg.Remotes[args[0]] = cfg.Remote{Type: userRemote.Type, Configuration: userRemote.Configuration,
 			Data: data}
-		writeUserConfig()
+		WriteUserConfig()
 	}}

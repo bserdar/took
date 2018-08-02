@@ -8,7 +8,13 @@ import (
 )
 
 type Configuration struct {
-	Remotes map[string]Remote `yaml:"remotes"`
+	Remotes        map[string]Remote  `yaml:"remotes,omitempty"`
+	ServerProfiles map[string]Profile `yaml:"serverProfiles,omitempty"`
+}
+
+type Profile struct {
+	Type          string      `yaml:"type"`
+	Configuration interface{} `yaml:"cfg,omitempty"`
 }
 
 type Remote struct {

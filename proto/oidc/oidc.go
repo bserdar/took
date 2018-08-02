@@ -1,4 +1,4 @@
-package cmd
+package oidc
 
 import (
 	"encoding/json"
@@ -8,50 +8,51 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bserdar/took/cfg"
-	"github.com/bserdar/took/proto/oidc"
+	"github.com/bserdar/took/cmd"
+	"github.com/bserdar/took/proto"
 )
 
 type oidcConnect struct {
 	Name string
-	Cfg  oidc.Config
+	Cfg  Config
 	form string
 }
 
 var oidcCfg oidcConnect
 
-var oidcConnectWizard = []SetupStep{
+var oidcConnectWizard = []proto.SetupStep{
 	{Prompt: "Server URL:", Parse: func(in string) error {
 		if len(in) == 0 {
 			return fmt.Errorf("Server URL is required")
 		}
 		oidcCfg.Cfg.URL = in
 		return nil
-	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).URL }},
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).URL }},
 	{Prompt: "Client ID:", Parse: func(in string) error {
 		if len(in) == 0 {
 			return fmt.Errorf("Client id is required")
 		}
 		oidcCfg.Cfg.ClientId = in
 		return nil
-	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).ClientId }},
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientId }},
 	{Prompt: "Client secret:", Parse: func(in string) error {
 		if len(in) == 0 {
 			return fmt.Errorf("Client secret is required")
 		}
 		oidcCfg.Cfg.ClientSecret = in
 		return nil
-	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).ClientSecret }},
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientSecret }},
 	{Prompt: "Callback URL:", Parse: func(in string) error {
 		if len(in) == 0 {
 			return fmt.Errorf("Callback URL is required")
 		}
 		oidcCfg.Cfg.CallbackURL = in
 		return nil
-	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*oidc.Config).CallbackURL }}}
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).CallbackURL }}}
 
 func init() {
-	addCmd.AddCommand(oidcConnectCmd)
-	modCmd.AddCommand(oidcConnectUpdateCmd)
+	cmd.AddCmd.AddCommand(oidcConnectCmd)
+	cmd.ModCmd.AddCommand(oidcConnectUpdateCmd)
 
 	doFlags := func(cmd *cobra.Command) {
 		cmd.Flags().StringVarP(&oidcCfg.Name, "name", "n", "", "Name of the configuration (required)")
@@ -68,6 +69,7 @@ func init() {
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
 		cmd.Flags().BoolVarP(&oidcCfg.Cfg.PasswordGrant, "pwd", "p", false, "Password grant")
+		cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
 		cmd.Flags().StringVarP(&oidcCfg.form, "form", "F", "", `Login form parameters, json document
   { "id":<formId>,
     "username": <name of the fields[] element for username>,
@@ -91,8 +93,8 @@ var oidcConnectUpdateCmd = &cobra.Command{
 	Use:   "oidc",
 	Short: "Update an oidc configuration",
 	Long:  `Update an oidc configuration`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if _, ok := UserCfg.Remotes[oidcCfg.Name]; !ok {
+	Run: func(c *cobra.Command, args []string) {
+		if _, ok := cmd.UserCfg.Remotes[oidcCfg.Name]; !ok {
 			log.Fatalf("Remote %s does not exist", oidcCfg.Name)
 		}
 		parseOidc()
@@ -102,15 +104,15 @@ var oidcConnectCmd = &cobra.Command{
 	Use:   "oidc",
 	Short: "Add a new oidc configuration using authorization code flow",
 	Long:  `Add a new oidc configuration using authorization code flow`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if _, ok := UserCfg.Remotes[oidcCfg.Name]; ok {
+	Run: func(c *cobra.Command, args []string) {
+		if _, ok := cmd.UserCfg.Remotes[oidcCfg.Name]; ok {
 			log.Fatalf("Remote %s already exists", oidcCfg.Name)
 		}
 		parseOidc()
 	}}
 
 func parseOidc() {
-	var formCfg oidc.HTMLFormConfig
+	var formCfg HTMLFormConfig
 	if len(oidcCfg.form) > 0 {
 		err := json.Unmarshal([]byte(oidcCfg.form), &formCfg)
 		if err != nil {
@@ -118,6 +120,11 @@ func parseOidc() {
 		}
 		oidcCfg.Cfg.Form = &formCfg
 	}
-	UserCfg.Remotes[oidcCfg.Name] = cfg.Remote{Type: "oidc-auth", Configuration: oidcCfg.Cfg}
-	writeUserConfig()
+	cmd.UserCfg.Remotes[oidcCfg.Name] = cfg.Remote{Type: "oidc-auth", Configuration: oidcCfg.Cfg}
+	cmd.WriteUserConfig()
+}
+
+func (p *Protocol) InitSetupWizard(name string) ([]proto.SetupStep, *cobra.Command) {
+	oidcCfg.Name = name
+	return oidcConnectWizard, oidcConnectCmd
 }

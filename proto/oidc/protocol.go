@@ -15,14 +15,15 @@ import (
 )
 
 type Config struct {
-	ClientId      string
-	ClientSecret  string
 	URL           string
-	CallbackURL   string
 	TokenAPI      string
 	AuthAPI       string
-	PasswordGrant bool
 	Form          *HTMLFormConfig
+	ClientId      string
+	ClientSecret  string
+	CallbackURL   string
+	PasswordGrant bool
+	Insecure      bool
 }
 
 // Data contains the tokens
@@ -108,6 +109,9 @@ func (t TokenData) FormatToken(out proto.OutputOption) string {
 // GetToken gets a token
 func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, error) {
 	cfg := p.ConfigWithDefaults()
+	if cfg.Insecure {
+		proto.InsecureTLS = true
+	}
 
 	// If there is a username, use that. Otherwise, use last
 	userName := request.Username

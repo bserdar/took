@@ -1,5 +1,7 @@
 package proto
 
+import "github.com/spf13/cobra"
+
 type RefreshOption int
 
 // Constants for how to get the token
@@ -37,6 +39,11 @@ type Protocol interface {
 	// data blocks. Returns the new copy of data block for
 	// configuration
 	GetToken(TokenRequest) (string, interface{}, error)
+
+	// InitSetupWizard should initialize the internal configuration to
+	// setup configuration 'name', and return the setup steps and the
+	// cobra command
+	InitSetupWizard(name string) ([]SetupStep, *cobra.Command)
 }
 
 var protocols = make(map[string]func() Protocol)
