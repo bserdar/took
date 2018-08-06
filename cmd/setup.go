@@ -1,97 +1,81 @@
 package cmd
 
 import (
-	"bytes"
-	"fmt"
-	"log"
+// "bytes"
+// "fmt"
+// "log"
 
-	"github.com/mitchellh/mapstructure"
-	"github.com/spf13/cobra"
+// "github.com/spf13/cobra"
 
-	"github.com/bserdar/took/cfg"
-	"github.com/bserdar/took/proto"
+// "github.com/bserdar/took/cfg"
+// "github.com/bserdar/took/proto"
 )
 
 func init() {
-	RootCmd.AddCommand(setupCmd)
+	//	RootCmd.AddCommand(setupCmd)
 }
 
-var setupCmd = &cobra.Command{
-	Use:   "setup",
-	Short: "Setup a new authentication configuration",
-	Long: `Setup a new authentication configuration. 
+// var setupCmd = &cobra.Command{
+// 	Use:   "setup",
+// 	Short: "Setup a new authentication configuration based on a server profile",
+// 	Long: `Setup a new authentication configuration based on a server profile.
 
- took setup [newName [protocol]]
-`,
-	Args: cobra.MaximumNArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		var cfgName string
-		commonCfg := cfg.ReadCommonConfig()
+//  took setup [newName [protocol]]
+// `,
+// 	Run: func(cmd *cobra.Command, args []string) {
+// 		var serverProfileName string
+// 	askProfile:
+// 		if len(cfg.CommonCfg.ServerProfiles)+len(cfg.UserCfg.ServerProfiles) > 0 {
+// 			buf := bytes.Buffer{}
+// 			buf.WriteString("These are the known server profiles:\n")
+// 			for k, v := range cfg.CommonCfg.ServerProfiles {
+// 				buf.WriteString(fmt.Sprintf("%s (%s)\n", k, v.Type))
+// 			}
+// 			for k, v := range cfg.UserCfg.ServerProfiles {
+// 				buf.WriteString(fmt.Sprintf("%s (%s)\n", k, v.Type))
+// 			}
+// 			buf.WriteString("Enter the server profile for which you want to add a new authentication configuration:")
+// 			serverProfileName = proto.Ask(buf.String())
+// 		} else {
+// 			log.Fatalf("There are no known server profiles")
+// 		}
 
-		askName := func() {
-			if len(commonCfg.Remotes) > 0 {
-				buf := bytes.Buffer{}
-				buf.WriteString("These are the known configurations:\n")
-				for k := range commonCfg.Remotes {
-					buf.WriteString(fmt.Sprintf("%s\n", k))
-				}
-				buf.WriteString("Enter configuration to add a new entry, or enter a new configuration name:")
-				cfgName = proto.Ask(buf.String())
-			} else {
-				cfgName = proto.Ask("Enter new configuration name:")
-			}
-		}
+// 		serverProfile := cfg.GetServerProfile(serverProfileName)
+// 		if len(serverProfile.Type) == 0 {
+// 			goto askProfile
+// 		}
 
-		if len(args) > 0 {
-			cfgName = args[0]
-		} else {
-			askName()
-		}
+// 	askName:
+// 		cfgName := proto.Ask("Enter name of the new authentication configuration:")
+// 		if _, ok := cfg.UserCfg.Remotes[cfgName]; ok {
+// 			fmt.Printf("%s already exists\n", cfgName)
+// 			goto askName
+// 		}
 
-	recheckName:
-		if _, ok := UserCfg.Remotes[cfgName]; ok {
-			fmt.Printf("%s already exists\n", cfgName)
-			askName()
-			goto recheckName
-		}
+// 		protocol := proto.Get(serverProfile.Type)
+// 		if protocol == nil {
+// 			panic("Invalid protocol")
+// 		}
 
-		var protocolName string
-		if len(args) > 1 {
-			protocolName = args[1]
-		} else {
-			protocols := proto.ProtocolNames()
-			if len(protocols) > 1 {
-				protocolName = proto.Ask(fmt.Sprintf("Protocol (supported values: %v):", protocols))
-			} else {
-				protocolName = protocols[0]
-			}
-		}
+// 		var rmt interface{}
+// 		if cfg.CommonCfg.Remotes != nil {
+// 			if r, ok := cfg.CommonCfg.Remotes[cfgName]; ok {
+// 				if r.Configuration != nil {
+// 					defaults, err := protocol.DecodeCfg(r.Configuration)
+// 					if err != nil {
+// 						log.Fatalf("Error reading common configuration: %s", err)
+// 					}
+// 					rmt = defaults
+// 				}
+// 			}
+// 		}
 
-		protocol := proto.Get(protocolName)
-		if protocol == nil {
-			panic("Invalid protocol")
-		}
-
-		var rmt interface{}
-		if commonCfg.Remotes != nil {
-			if r, ok := commonCfg.Remotes[cfgName]; ok {
-				if r.Configuration != nil {
-					defaults := protocol.GetConfigDefaultsInstance()
-					err := mapstructure.Decode(r.Configuration, defaults)
-					if err != nil {
-						log.Fatalf("Error reading common configuration: %s", err)
-					}
-					rmt = defaults
-				}
-			}
-		}
-
-		wiz, command := protocol.InitSetupWizard(cfgName)
-		if wiz == nil {
-			panic("unknown protocol")
-		}
-		for _, s := range wiz {
-			s.Run(rmt)
-		}
-		command.Run(command, []string{})
-	}}
+// 		wiz, command := protocol.InitSetupWizard(cfgName)
+// 		if wiz == nil {
+// 			panic("unknown protocol")
+// 		}
+// 		for _, s := range wiz {
+// 			s.Run(rmt)
+// 		}
+// 		command.Run(command, []string{})
+// 	}}

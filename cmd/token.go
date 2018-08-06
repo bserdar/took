@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/mitchellh/mapstructure"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/bserdar/took/cfg"
@@ -33,8 +32,8 @@ var TokenCmd = &cobra.Command{
 	Long:  `Get a token for a config, renew if necessary`,
 	Args:  cobra.RangeArgs(1, 3),
 	Run: func(cmd *cobra.Command, args []string) {
-		userRemote, uok := UserCfg.Remotes[args[0]]
-		commonRemote, cok := CommonCfg.Remotes[args[0]]
+		userRemote, uok := cfg.UserCfg.Remotes[args[0]]
+		commonRemote, cok := cfg.CommonCfg.Remotes[args[0]]
 		if !uok && !cok {
 			log.Fatalf("Cannot find %s\n", args[0])
 		}
@@ -50,27 +49,21 @@ var TokenCmd = &cobra.Command{
 			fmt.Printf("Cannot find protocol %s\n", t)
 			os.Exit(1)
 		}
-		userCfg := protocol.GetConfigInstance()
-		defaults := protocol.GetConfigDefaultsInstance()
-		if uok {
-			err := mapstructure.Decode(userRemote.Configuration, userCfg)
-			if err != nil {
-				log.Fatalf("Error reading configuration: %s", err)
-			}
-		}
-		if cok {
-			err := mapstructure.Decode(commonRemote.Configuration, defaults)
-			if err != nil {
-				log.Fatalf("Error reading common configuration: %s", err)
-			}
-		}
-		data := protocol.GetDataInstance()
-		if uok {
-			err := mapstructure.Decode(userRemote.Data, data)
-			if err != nil {
-				log.Fatalf("Error reading data: %s", err)
-			}
-		}
+		protocol.SetCfg(userRemote, commonRemote)
+		// userCfg := protocol.GetConfigInstance()
+		// defaults := protocol.GetConfigDefaultsInstance()
+		// if uok {
+		// 	cfg.Decode(userRemote.Configuration, userCfg)
+		// 	log.Debugf("User cfg: %v", userCfg)
+		// }
+		// if cok {
+		// 	cfg.Decode(commonRemote.Configuration, defaults)
+		// 	log.Debugf("Defaults: %v", defaults)
+		// }
+		// data := protocol.GetDataInstance()
+		// if uok {
+		// 	cfg.Decode(userRemote.Data, data)
+		// }
 		opt := proto.UseDefault
 		if forceNew {
 			opt = proto.UseReAuth
@@ -95,7 +88,7 @@ var TokenCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		fmt.Println(s)
-		UserCfg.Remotes[args[0]] = cfg.Remote{Type: userRemote.Type, Configuration: userRemote.Configuration,
+		cfg.UserCfg.Remotes[args[0]] = cfg.Remote{Type: userRemote.Type, Configuration: userRemote.Configuration,
 			Data: data}
 		WriteUserConfig()
 	}}

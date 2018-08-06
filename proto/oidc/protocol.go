@@ -11,20 +11,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
+	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/proto"
 )
-
-type Config struct {
-	URL           string
-	TokenAPI      string
-	AuthAPI       string
-	Form          *HTMLFormConfig
-	ClientId      string
-	ClientSecret  string
-	CallbackURL   string
-	PasswordGrant bool
-	Insecure      bool
-}
 
 // Data contains the tokens
 type Data struct {
@@ -54,38 +43,41 @@ func (d Data) findUser(username string) *TokenData {
 	return nil
 }
 
-// Merge sets the unset fields of c from defaults
-func (c Config) Merge(defaults Config) Config {
-	wdef := func(s, def string) string {
-		if len(s) > 0 {
-			return s
-		}
-		return def
+func (p *Protocol) DecodeCfg(in interface{}) (interface{}, error) {
+	if in != nil {
+		out := Config{}
+		cfg.Decode(in, &out)
+		return out, nil
 	}
-	ret := Config{ClientId: wdef(c.ClientId, defaults.ClientId),
-		ClientSecret: wdef(c.ClientSecret, defaults.ClientSecret),
-		URL:          wdef(c.URL, defaults.URL),
-		CallbackURL:  wdef(c.CallbackURL, defaults.CallbackURL),
-		TokenAPI:     wdef(c.TokenAPI, defaults.TokenAPI),
-		AuthAPI:      wdef(c.AuthAPI, defaults.AuthAPI)}
-	ret.PasswordGrant = c.PasswordGrant
-	if c.Form != nil {
-		ret.Form = c.Form
-	} else {
-		ret.Form = defaults.Form
-	}
-	return ret
+	return nil, nil
 }
 
-// GetConfigInstance returns a pointer to a new config
-func (p *Protocol) GetConfigInstance() interface{} { return &p.Cfg }
+func (p *Protocol) SetCfg(user, common cfg.Remote) {
+	if user.Configuration != nil {
+		cfg.Decode(user.Configuration, &p.Cfg)
+	}
+	if user.Data != nil {
+		cfg.Decode(user.Data, &p.Tokens)
+	}
+	if common.Configuration != nil {
+		cfg.Decode(common.Configuration, &p.Defaults)
+	}
+}
 
-func (p *Protocol) GetConfigDefaultsInstance() interface{} { return &p.Defaults }
+func (p *Protocol) GetConfig() Config {
+	ret := p.Cfg
 
-func (p *Protocol) GetDataInstance() interface{} { return &p.Tokens }
-
-func (p *Protocol) ConfigWithDefaults() Config {
-	return p.Cfg.Merge(p.Defaults)
+	// First look at server profile reference
+	profile := cfg.GetServerProfile(ret.Profile)
+	if len(profile.Type) > 0 {
+		if profile.Type != "oidc" && profile.Type != "oidc-auth" {
+			panic("Server profile is not for oidc")
+		}
+		sp := ServerProfile{}
+		cfg.Decode(profile.Configuration, &sp)
+		ret.ServerProfile = ret.ServerProfile.Merge(sp)
+	}
+	return ret.Merge(p.Defaults)
 }
 
 func init() {
@@ -108,7 +100,7 @@ func (t TokenData) FormatToken(out proto.OutputOption) string {
 
 // GetToken gets a token
 func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, error) {
-	cfg := p.ConfigWithDefaults()
+	cfg := p.GetConfig()
 	if cfg.Insecure {
 		proto.InsecureTLS = true
 	}
@@ -209,7 +201,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 }
 
 func (p *Protocol) Refresh(tok *TokenData) error {
-	cfg := p.ConfigWithDefaults()
+	cfg := p.GetConfig()
 	t, err := RefreshToken(cfg.ClientId, cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL())
 	if err != nil {
 		return err
@@ -221,7 +213,7 @@ func (p *Protocol) Refresh(tok *TokenData) error {
 }
 
 func (p *Protocol) GetTokenURL() string {
-	cfg := p.ConfigWithDefaults()
+	cfg := p.GetConfig()
 	token := cfg.TokenAPI
 	if token == "" {
 		token = "protocol/openid-connect/token"
@@ -230,7 +222,7 @@ func (p *Protocol) GetTokenURL() string {
 }
 
 func (p *Protocol) GetAuthURL() string {
-	cfg := p.ConfigWithDefaults()
+	cfg := p.GetConfig()
 	auth := cfg.AuthAPI
 	if auth == "" {
 		auth = "protocol/openid-connect/auth"

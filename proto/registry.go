@@ -1,6 +1,10 @@
 package proto
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/bserdar/took/cfg"
+
+	"github.com/spf13/cobra"
+)
 
 type RefreshOption int
 
@@ -28,13 +32,14 @@ type TokenRequest struct {
 
 // Protocol defines a protocol
 type Protocol interface {
-	// GetDataInstance returns a new data block into which the data
-	// part of the configuration will be unmarshaled
-	GetDataInstance() interface{}
-	// GetConfigInstance returns a new configuration instance into which the configuration will be unmarshaled
-	GetConfigInstance() interface{}
-	// GetConfigDefaultInstance returns an instance of configuration into which defaults will be unmarshaled
-	GetConfigDefaultsInstance() interface{}
+
+	// DecodeCfg decodes the input map configuration into protocol specific structure
+	DecodeCfg(config interface{}) (interface{}, error)
+
+	// SetCfg sets the configuration for the protocol instance. The
+	// passed in userCfg and commonCfg can be nil
+	SetCfg(userCfg, commonCfg cfg.Remote)
+
 	// GetToken returns the token with the given configuration and
 	// data blocks. Returns the new copy of data block for
 	// configuration

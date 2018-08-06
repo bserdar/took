@@ -27,9 +27,6 @@ import (
 var cfgFile string
 var verbose bool
 
-var UserCfg cfg.Configuration
-var CommonCfg cfg.Configuration
-
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "took",
@@ -74,7 +71,6 @@ func getConfigFile() string {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	CommonCfg = cfg.ReadCommonConfig()
 	cfgf := getConfigFile()
 	_, err := os.Stat(cfgf)
 	if os.IsNotExist(err) && cfgFile == "" {
@@ -84,7 +80,7 @@ func initConfig() {
 		}
 		f.Close()
 	}
-	UserCfg = cfg.ReadConfig(getConfigFile())
+	cfg.ReadUserConfig(getConfigFile())
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	} else {
@@ -93,7 +89,7 @@ func initConfig() {
 }
 
 func WriteUserConfig() {
-	err := cfg.WriteConfig(getConfigFile(), UserCfg)
+	err := cfg.WriteUserConfig(getConfigFile())
 	if err != nil {
 		log.Fatalf("Cannot write config: %s", err)
 	}

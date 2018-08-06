@@ -62,10 +62,10 @@ func init() {
 		cmd.MarkFlagRequired("clientId")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientSecret, "secret", "s", "", "Client Secret (required)")
 		cmd.MarkFlagRequired("secret")
-		cmd.Flags().StringVarP(&oidcCfg.Cfg.URL, "url", "u", "", "Server URL (required)")
-		cmd.MarkFlagRequired("url")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.CallbackURL, "callback-url", "b", "", "Callback URL (required)")
 		cmd.MarkFlagRequired("callback-url")
+		cmd.Flags().StringVarP(&oidcCfg.Cfg.Profile, "server", "e", "", "Server profile to use. Either a server profile or the server URL must be given")
+		cmd.Flags().StringVarP(&oidcCfg.Cfg.URL, "url", "u", "", "Server URL, if a server profile is not given")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
 		cmd.Flags().BoolVarP(&oidcCfg.Cfg.PasswordGrant, "pwd", "p", false, "Password grant")
@@ -94,7 +94,7 @@ var oidcConnectUpdateCmd = &cobra.Command{
 	Short: "Update an oidc configuration",
 	Long:  `Update an oidc configuration`,
 	Run: func(c *cobra.Command, args []string) {
-		if _, ok := cmd.UserCfg.Remotes[oidcCfg.Name]; !ok {
+		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; !ok {
 			log.Fatalf("Remote %s does not exist", oidcCfg.Name)
 		}
 		parseOidc()
@@ -102,16 +102,57 @@ var oidcConnectUpdateCmd = &cobra.Command{
 
 var oidcConnectCmd = &cobra.Command{
 	Use:   "oidc",
-	Short: "Add a new oidc configuration using authorization code flow",
-	Long:  `Add a new oidc configuration using authorization code flow`,
+	Short: "Add a new oidc configuration",
+	Long: `Add a new oidc configuration.
+
+You will need the following information to create an OIDC configuration. These are supplied by the API provider:
+
+   ClientId/ClientSecret: This pair uniquely identifies your application to the authentication server
+   CallbackURL: This is the CallbackURL you must configure when you signed up with the API provider.
+                This URL does not have to be a valid website. Once authenticated, the authentication 
+                server returns an HTTP redirect to this CallbackURL.  This redirect also contains 
+                codes that you can exchange for tokens, or tokens themselves.
+                Took never attempts to follow this redirection, it simply extracts authentication information 
+                from the redirection response. However, if you use a browser to extract this information, make
+                sure this URL does not redirect you somewhere else, otherwise you will not be able to get your
+                authentication code.
+
+You can use a predefined server profile to define authentication configurations:
+
+   took add oidc -n <name> -e <profile> -c <clientId> -s <clientSecret> -b <callbackURL>
+
+Or you can add configuration by defining the server URL and other server attributes:
+
+   took add oidc -n <name> -u <serverURL> (other optional server arguments) -c <clientId> -s <clientSecret> -b <callbackURL> 
+
+ `,
 	Run: func(c *cobra.Command, args []string) {
-		if _, ok := cmd.UserCfg.Remotes[oidcCfg.Name]; ok {
+		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; ok {
 			log.Fatalf("Remote %s already exists", oidcCfg.Name)
 		}
 		parseOidc()
 	}}
 
 func parseOidc() {
+	// There must be either a valid server profile, or server URL
+	if len(oidcCfg.Cfg.URL) == 0 {
+		if len(oidcCfg.Cfg.Profile) == 0 {
+			log.Fatal("Either a server URL or a server profile must be given")
+		}
+		profile := cfg.UserCfg.GetServerProfile(oidcCfg.Cfg.Profile)
+		if len(profile.Type) > 0 {
+			if profile.Type != "oidc" && profile.Type != "oidc-auth" {
+				log.Fatal("Server profile is not for oidc")
+			}
+		} else {
+			profile = cfg.CommonCfg.GetServerProfile(oidcCfg.Cfg.Profile)
+			if len(profile.Type) > 0 {
+				if profile.Type != "oidc" && profile.Type != "oidc-auth" {
+					log.Fatal("Server profile is not for oidc")
+				}
+			}
+		}
+	}
 	var formCfg HTMLFormConfig
 	if len(oidcCfg.form) > 0 {
 		err := json.Unmarshal([]byte(oidcCfg.form), &formCfg)
@@ -120,7 +161,7 @@ func parseOidc() {
 		}
 		oidcCfg.Cfg.Form = &formCfg
 	}
-	cmd.UserCfg.Remotes[oidcCfg.Name] = cfg.Remote{Type: "oidc-auth", Configuration: oidcCfg.Cfg}
+	cfg.UserCfg.Remotes[oidcCfg.Name] = cfg.Remote{Type: "oidc-auth", Configuration: oidcCfg.Cfg}
 	cmd.WriteUserConfig()
 }
 
