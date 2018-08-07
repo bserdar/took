@@ -21,13 +21,6 @@ type oidcConnect struct {
 var oidcCfg oidcConnect
 
 var oidcConnectWizard = []proto.SetupStep{
-	{Prompt: "Server URL:", Parse: func(in string) error {
-		if len(in) == 0 {
-			return fmt.Errorf("Server URL is required")
-		}
-		oidcCfg.Cfg.URL = in
-		return nil
-	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).URL }},
 	{Prompt: "Client ID:", Parse: func(in string) error {
 		if len(in) == 0 {
 			return fmt.Errorf("Client id is required")
@@ -165,7 +158,8 @@ func parseOidc() {
 	cmd.WriteUserConfig()
 }
 
-func (p *Protocol) InitSetupWizard(name string) ([]proto.SetupStep, *cobra.Command) {
+func (p *Protocol) InitSetupWizard(name string, profileName string, profile cfg.Profile) ([]proto.SetupStep, *cobra.Command) {
 	oidcCfg.Name = name
+	oidcCfg.Cfg.Profile = profileName
 	return oidcConnectWizard, oidcConnectCmd
 }

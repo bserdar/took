@@ -48,7 +48,7 @@ type Protocol interface {
 	// InitSetupWizard should initialize the internal configuration to
 	// setup configuration 'name', and return the setup steps and the
 	// cobra command
-	InitSetupWizard(name string) ([]SetupStep, *cobra.Command)
+	InitSetupWizard(name string, profileName string, profile cfg.Profile) ([]SetupStep, *cobra.Command)
 }
 
 var protocols = make(map[string]func() Protocol)
