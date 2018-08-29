@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 
@@ -168,23 +170,31 @@ func FillForm(cfg HTMLFormConfig, page *html.Node, userName, password string) (a
 // the redirect URL
 func FormAuth(cfg HTMLFormConfig, authUrl string, userName, password string) *url.URL {
 	var redirectedURL *url.URL
+	log.Debugf("Reading login page at %s", authUrl)
 	node, cookies, err := ReadPage(authUrl)
 	if err == nil && node != nil {
 		action, values, err := FillForm(cfg, node, userName, password)
+		log.Debugf("action=%s err=%s", action, err)
 		if err == nil && action != "" && values != nil {
-			request, _ := http.NewRequest(http.MethodPost, action, ioutil.NopCloser(strings.NewReader(values.Encode())))
+			formData := values.Encode()
+			request, _ := http.NewRequest(http.MethodPost, action, ioutil.NopCloser(strings.NewReader(formData)))
 			for _, c := range cookies {
 				request.AddCookie(c)
 			}
+			log.Debugf("posting...")
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			request.ContentLength = int64(len(formData))
 			cli := proto.GetHTTPClient()
 			cli.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 				redirectedURL = req.URL
 				return errors.New("Redirect")
 			}
 			response, _ := cli.Do(request)
+			log.Debugf("Response: %+v", response)
 			defer response.Body.Close()
 		}
+	} else {
+		log.Debugf("err:%s", err)
 	}
 	return redirectedURL
 }
