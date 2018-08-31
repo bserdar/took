@@ -146,7 +146,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	conf := &oauth2.Config{
 		ClientID:     cfg.ClientId,
 		ClientSecret: cfg.ClientSecret,
-		Scopes:       []string{"openid", "offline_access"},
+		Scopes:       []string{"openid"},
 		RedirectURL:  cfg.CallbackURL,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  p.GetAuthURL(),
@@ -156,6 +156,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	var err error
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())
+	conf.Scopes = append(conf.Scopes, cfg.AdditionalScopes...)
 	if cfg.PasswordGrant {
 		var password string
 		if len(request.Password) > 0 {
