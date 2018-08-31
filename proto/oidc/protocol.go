@@ -146,7 +146,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	conf := &oauth2.Config{
 		ClientID:     cfg.ClientId,
 		ClientSecret: cfg.ClientSecret,
-		Scopes:       []string{"openid"},
+		Scopes:       []string{"openid", "offline_access"},
 		RedirectURL:  cfg.CallbackURL,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  p.GetAuthURL(),
