@@ -1,11 +1,12 @@
 package oidc
 
 type ServerProfile struct {
-	URL      string
-	TokenAPI string
-	AuthAPI  string
-	Form     *HTMLFormConfig
-	Insecure bool
+	URL              string
+	TokenAPI         string
+	AuthAPI          string
+	Form             *HTMLFormConfig
+	Insecure         bool
+	AdditionalScopes []string
 }
 
 // Merge sets any unset field in s from in, and returns the merged copy
@@ -18,6 +19,8 @@ func (s ServerProfile) Merge(in ServerProfile) ServerProfile {
 	if ret.Form == nil {
 		ret.Form = in.Form
 	}
+	ret.AdditionalScopes = append(s.AdditionalScopes, in.AdditionalScopes...)
+
 	return ret
 }
 

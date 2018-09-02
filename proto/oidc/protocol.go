@@ -156,6 +156,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	var err error
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())
+	conf.Scopes = append(conf.Scopes, cfg.AdditionalScopes...)
 	if cfg.PasswordGrant {
 		var password string
 		if len(request.Password) > 0 {
