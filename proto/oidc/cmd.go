@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -13,9 +14,10 @@ import (
 )
 
 type oidcConnect struct {
-	Name string
-	Cfg  Config
-	form string
+	Name   string
+	Cfg    Config
+	form   string
+	scopes string
 }
 
 var oidcCfg oidcConnect
@@ -61,6 +63,7 @@ func init() {
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.URL, "url", "u", "", "Server URL, if a server profile is not given")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
+		cmd.Flags().StringVarP(&oidcCfg.scopes, "scopes", "o", "", "Additional scopes to request from server (-o scope1,scope2,scope3)")
 		cmd.Flags().BoolVarP(&oidcCfg.Cfg.PasswordGrant, "pwd", "p", false, "Password grant")
 		cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
 		cmd.Flags().StringVarP(&oidcCfg.form, "form", "F", "", `Login form parameters, json document
@@ -153,6 +156,9 @@ func parseOidc() {
 			log.Fatal(err)
 		}
 		oidcCfg.Cfg.Form = &formCfg
+	}
+	if len(oidcCfg.scopes) > 0 {
+		oidcCfg.Cfg.AdditionalScopes = strings.Split(oidcCfg.scopes, ",")
 	}
 	cfg.UserCfg.Remotes[oidcCfg.Name] = cfg.Remote{Type: "oidc-auth", Configuration: oidcCfg.Cfg}
 	cmd.WriteUserConfig()
