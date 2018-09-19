@@ -19,8 +19,9 @@ func Validate(accessToken, serverUrl string) bool {
 		}
 		claims := jwt.Claims{}
 		token.Claims(svc.PK, &claims)
-		log.Debugf("Token: %v claims: %v", token, claims)
-		e := claims.Validate(jwt.Expected{Time: time.Now()})
+		log.Debugf("Token: %+v claims: %+v", token, claims)
+		log.Debugf("Expiration: %d now: %d", claims.Expiry, time.Now().Unix())
+		e := claims.ValidateWithLeeway(jwt.Expected{Time: time.Now()}, -30*time.Second)
 		if e == nil {
 			log.Debug("Token is valid")
 			return true
