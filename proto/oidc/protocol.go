@@ -124,10 +124,15 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	}
 	p.Tokens.Last = tok.Username
 
+	serverData, err := GetServerData(cfg.URL)
+	if err != nil {
+		return "", nil, err
+	}
+
 	if request.Refresh != proto.UseReAuth {
 		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")
-			if Validate(tok.AccessToken, cfg.URL) {
+			if p.Validate(tok.AccessToken, serverData) {
 				log.Debug("Token is valid")
 				if request.Refresh != proto.UseRefresh {
 					return tok.FormatToken(request.Out), p.Tokens, nil
@@ -135,7 +140,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 			}
 			if tok.RefreshToken != "" {
 				log.Debug("Refreshing token")
-				err := p.Refresh(tok)
+				err := p.Refresh(tok, serverData)
 				if err == nil {
 					return tok.FormatToken(request.Out), p.Tokens, nil
 				}
@@ -149,11 +154,10 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 		Scopes:       []string{"openid"},
 		RedirectURL:  cfg.CallbackURL,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  p.GetAuthURL(),
-			TokenURL: p.GetTokenURL()}}
+			AuthURL:  p.GetAuthURL(serverData),
+			TokenURL: p.GetTokenURL(serverData)}}
 	state := fmt.Sprintf("%x", rand.Uint64())
 	var token *oauth2.Token
-	var err error
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())
 	conf.Scopes = append(conf.Scopes, cfg.AdditionalScopes...)
@@ -201,9 +205,9 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	return tok.FormatToken(request.Out), p.Tokens, nil
 }
 
-func (p *Protocol) Refresh(tok *TokenData) error {
+func (p *Protocol) Refresh(tok *TokenData, s ServerData) error {
 	cfg := p.GetConfig()
-	t, err := RefreshToken(cfg.ClientId, cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL())
+	t, err := RefreshToken(cfg.ClientId, cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL(s))
 	if err != nil {
 		return err
 	}
@@ -213,22 +217,20 @@ func (p *Protocol) Refresh(tok *TokenData) error {
 	return nil
 }
 
-func (p *Protocol) GetTokenURL() string {
+func (p *Protocol) GetTokenURL(s ServerData) string {
 	cfg := p.GetConfig()
-	token := cfg.TokenAPI
-	if token == "" {
-		token = "protocol/openid-connect/token"
+	if len(cfg.TokenAPI) == 0 {
+		return s.TokenEndpoint
 	}
-	return combine(cfg.URL, token)
+	return combine(cfg.URL, cfg.TokenAPI)
 }
 
-func (p *Protocol) GetAuthURL() string {
+func (p *Protocol) GetAuthURL(s ServerData) string {
 	cfg := p.GetConfig()
-	auth := cfg.AuthAPI
-	if auth == "" {
-		auth = "protocol/openid-connect/auth"
+	if len(cfg.AuthAPI) == 0 {
+		return s.AuthorizationEndpoint
 	}
-	return combine(cfg.URL, auth)
+	return combine(cfg.URL, cfg.AuthAPI)
 }
 
 func combine(base, suffix string) string {

@@ -46,7 +46,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ed25519","ed25519/internal/edwards25519","ssh/terminal"]
+  packages = ["ssh/terminal"]
   revision = "2c241ca3045ddc354463c376a9515d9f1f1390a4"
 
 [[projects]]
@@ -74,12 +74,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  name = "gopkg.in/square/go-jose.v2"
-  packages = [".","cipher","json","jwt"]
-  revision = "76dd09796242edb5b897103a75df2645c028c960"
-  version = "v2.1.6"
-
-[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -88,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c47022359381a51fc28a580beb8095bba4396f7eae6c5f1c635366c63aca3f2c"
+  inputs-digest = "435173515c7e3e22ce73b6fbc2b6c60918ce26cb58f8e63174cf8605ff3f2490"
   solver-name = "gps-cdcl"
   solver-version = 1
