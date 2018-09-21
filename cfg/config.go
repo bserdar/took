@@ -103,6 +103,7 @@ func WriteConfig(cfgFile string, cfg Configuration) error {
 	if e != nil {
 		return e
 	}
+	f.Chmod(0600)
 	defer f.Close()
 	enc := yml.NewEncoder(f)
 	return enc.Encode(cfg)
