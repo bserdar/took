@@ -2,8 +2,9 @@ package oidc
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,6 +15,8 @@ import (
 	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/proto"
 )
+
+const stateRandomLength = 32
 
 // Data contains the tokens
 type Data struct {
@@ -156,7 +159,15 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  p.GetAuthURL(serverData),
 			TokenURL: p.GetTokenURL(serverData)}}
-	state := fmt.Sprintf("%x", rand.Uint64())
+
+	// Generate a crytographically secure random token for the state.
+	stateBytes := make([]byte, stateRandomLength)
+	_, err = rand.Read(stateBytes)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	state := base64.URLEncoding.EncodeToString(stateBytes)
+
 	var token *oauth2.Token
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())

@@ -14,12 +14,9 @@
 
 package main
 
-import "time"
-import "math/rand"
 import "github.com/bserdar/took/cmd"
 import _ "github.com/bserdar/took/proto/oidc"
 
 func main() {
-	rand.Seed(time.Now().Unix())
 	cmd.Execute()
 }
