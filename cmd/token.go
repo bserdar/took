@@ -22,7 +22,9 @@ func init() {
 	RootCmd.AddCommand(TokenCmd)
 	TokenCmd.Flags().BoolVarP(&forceNew, "force-new", "f", false, "Force new token")
 	TokenCmd.Flags().BoolVarP(&forceRenew, "renew", "r", false, "Force token renewal")
-	TokenCmd.Flags().BoolVarP(&proto.InsecureTLS, "insecure", "k", false, "Insecure TLS (do not validate certificates)")
+	if cfg.InsecureAllowed() {
+		TokenCmd.Flags().BoolVarP(&proto.InsecureTLS, "insecure", "k", false, "Insecure TLS (do not validate certificates)")
+	}
 	TokenCmd.Flags().BoolVarP(&writeHeader, "header", "e", false, "Write HTTP header, Authorization: Bearer <token>")
 }
 
@@ -32,6 +34,7 @@ var TokenCmd = &cobra.Command{
 	Long:  `Get a token for a config, renew if necessary`,
 	Args:  cobra.RangeArgs(1, 3),
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg.DecryptUserConfig()
 		userRemote, uok := cfg.UserCfg.Remotes[args[0]]
 		commonRemote, cok := cfg.CommonCfg.Remotes[args[0]]
 		if !uok && !cok {

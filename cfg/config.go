@@ -1,17 +1,23 @@
 package cfg
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	yml "gopkg.in/yaml.v2"
+
+	"github.com/bserdar/took/crypta/rpc"
 )
 
 var UserCfg, CommonCfg Configuration
 
 type Configuration struct {
+	AuthKey        string             `yaml:"key,omitempty"`
 	Remotes        map[string]Remote  `yaml:"remotes,omitempty"`
 	ServerProfiles map[string]Profile `yaml:"serverProfiles,omitempty"`
 }
@@ -46,6 +52,8 @@ type Remote struct {
 	Type          string      `yaml:"type"`
 	Configuration interface{} `yaml:"cfg,omitempty"`
 	Data          interface{} `yaml:"data,omitempty"`
+	ECfg          string      `yaml:"ecfg,omitempty"`
+	EData         string      `yaml:"edata,omitempty"`
 }
 
 // ReadConfig reads the cfgFile.
@@ -89,12 +97,70 @@ func ReadCommonConfig() Configuration {
 	return cfg
 }
 
+func decrypt(cli *rpc.RequestProcessorClient, in string) map[string]interface{} {
+	out, err := cli.Decrypt(in)
+	if err != nil {
+		panic(err)
+	}
+	var m map[string]interface{}
+	json.Unmarshal([]byte(out), &m)
+	return m
+}
+
+func encrypt(cli *rpc.RequestProcessorClient, in interface{}) string {
+	s, _ := json.Marshal(in)
+	ret, _ := cli.Encrypt(string(s))
+	return ret
+}
+
+func decryptRemote(cli *rpc.RequestProcessorClient, in Remote) Remote {
+	if len(in.ECfg) > 0 {
+		in.Configuration = decrypt(cli, in.ECfg)
+	}
+	if len(in.EData) > 0 {
+		in.Data = decrypt(cli, in.EData)
+	}
+	return in
+}
+
+func encryptRemote(cli *rpc.RequestProcessorClient, in Remote) Remote {
+	if in.Configuration != nil {
+		in.ECfg = encrypt(cli, in.Configuration)
+		in.Configuration = nil
+	}
+	if in.Data != nil {
+		in.EData = encrypt(cli, in.Data)
+		in.Data = nil
+	}
+	return in
+}
+
 func ReadUserConfig(file string) {
 	UserCfg = ReadConfig(file)
 }
 
+func DecryptUserConfig() {
+	if len(UserCfg.AuthKey) > 0 {
+		cli := ConnectEncServer()
+		m := make(map[string]Remote)
+		for k, v := range UserCfg.Remotes {
+			m[k] = decryptRemote(cli, v)
+		}
+		UserCfg.Remotes = m
+	}
+}
+
 func WriteUserConfig(cfgFile string) error {
-	return WriteConfig(cfgFile, UserCfg)
+	cfg := UserCfg
+	if len(UserCfg.AuthKey) > 0 {
+		cli := ConnectEncServer()
+		m := make(map[string]Remote)
+		for k, v := range cfg.Remotes {
+			m[k] = encryptRemote(cli, v)
+		}
+		cfg.Remotes = m
+	}
+	return WriteConfig(cfgFile, cfg)
 }
 
 // Write configuration to the file
@@ -116,4 +182,42 @@ func Decode(in, out interface{}) {
 	if err != nil {
 		panic(fmt.Sprintf("Error decoding configuration: %s", err))
 	}
+}
+
+// Converts map[interface{}]interface{} into map[string]interface{}
+func ConvertMap(in interface{}) interface{} {
+	if in == nil {
+		return nil
+	}
+	if mp, ok := in.(map[interface{}]interface{}); ok {
+		out := make(map[string]interface{})
+		for k, v := range mp {
+			out[fmt.Sprint(k)] = ConvertMap(v)
+		}
+		return out
+	} else if sp, ok := in.(map[string]interface{}); ok {
+		out := make(map[string]interface{})
+		for k, v := range sp {
+			out[k] = ConvertMap(v)
+		}
+		return out
+	}
+	return in
+}
+
+func ConnectEncServer() *rpc.RequestProcessorClient {
+	socketName, e := homedir.Expand("~/.took.s")
+	if e != nil {
+		panic(e)
+	}
+	cli, err := rpc.NewRequestProcessorClient("unix", socketName)
+	if err != nil {
+		panic("You need to use took decrypt to decrypt the tokens")
+	}
+
+	return cli
+}
+
+func InsecureAllowed() bool {
+	return strings.Contains(os.Args[0], "-insecure")
 }

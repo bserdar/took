@@ -65,7 +65,9 @@ func init() {
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
 		cmd.Flags().StringVarP(&oidcCfg.scopes, "scopes", "o", "", "Additional scopes to request from server (-o scope1,scope2,scope3)")
 		cmd.Flags().BoolVarP(&oidcCfg.Cfg.PasswordGrant, "pwd", "p", false, "Password grant")
-		cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
+		if cfg.InsecureAllowed() {
+			cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
+		}
 		cmd.Flags().StringVarP(&oidcCfg.form, "form", "F", "", `Login form parameters, json document
   { "id":<formId>,
     "username": <name of the fields[] element for username>,

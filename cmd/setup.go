@@ -22,6 +22,7 @@ var setupCmd = &cobra.Command{
 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg.DecryptUserConfig()
 		var serverProfileName string
 	askProfile:
 		if len(cfg.CommonCfg.ServerProfiles)+len(cfg.UserCfg.ServerProfiles) > 0 {
