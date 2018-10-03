@@ -57,7 +57,8 @@ There is no way to rever this operation. Do you want to continue(y/N)?`)
 		}
 
 		enc := func(in interface{}) string {
-			doc, err := json.Marshal(cfg.ConvertMap(in))
+			in = cfg.ConvertMap(in)
+			doc, err := json.Marshal(in)
 			if err != nil {
 				panic(err)
 			}
@@ -66,6 +67,7 @@ There is no way to rever this operation. Do you want to continue(y/N)?`)
 			if err != nil {
 				panic(err)
 			}
+			fmt.Printf("Enc: In: %s out: %s\n", doc, rsp.Data)
 			return rsp.Data
 		}
 

@@ -39,7 +39,7 @@ func (s *RequestProcessorClient) Encrypt(data string) (string, error) {
 
 func (s *RequestProcessorClient) Decrypt(data string) (string, error) {
 	var rsp crypta.DataResponse
-	err := s.cli.Call("RequestProcessor.Encrypt", &crypta.DataRequest{Data: data}, &rsp)
+	err := s.cli.Call("RequestProcessor.Decrypt", &crypta.DataRequest{Data: data}, &rsp)
 	return rsp.Data, err
 }
 

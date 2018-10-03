@@ -103,36 +103,44 @@ func decrypt(cli *rpc.RequestProcessorClient, in string) map[string]interface{} 
 		panic(err)
 	}
 	var m map[string]interface{}
-	json.Unmarshal([]byte(out), &m)
+	err = json.Unmarshal([]byte(out), &m)
+	if err != nil {
+		panic(err)
+	}
 	return m
 }
 
-func encrypt(cli *rpc.RequestProcessorClient, in interface{}) string {
+func encrypt(cli *rpc.RequestProcessorClient, in interface{}) (string, *rpc.RequestProcessorClient) {
 	s, _ := json.Marshal(in)
+	if cli == nil {
+		cli = ConnectEncServer()
+	}
 	ret, _ := cli.Encrypt(string(s))
-	return ret
+	return ret, cli
 }
 
 func decryptRemote(cli *rpc.RequestProcessorClient, in Remote) Remote {
 	if len(in.ECfg) > 0 {
 		in.Configuration = decrypt(cli, in.ECfg)
+		in.ECfg = ""
 	}
 	if len(in.EData) > 0 {
 		in.Data = decrypt(cli, in.EData)
+		in.EData = ""
 	}
 	return in
 }
 
-func encryptRemote(cli *rpc.RequestProcessorClient, in Remote) Remote {
+func encryptRemote(cli *rpc.RequestProcessorClient, in Remote) (Remote, *rpc.RequestProcessorClient) {
 	if in.Configuration != nil {
-		in.ECfg = encrypt(cli, in.Configuration)
+		in.ECfg, cli = encrypt(cli, in.Configuration)
 		in.Configuration = nil
 	}
 	if in.Data != nil {
-		in.EData = encrypt(cli, in.Data)
+		in.EData, cli = encrypt(cli, in.Data)
 		in.Data = nil
 	}
-	return in
+	return in, cli
 }
 
 func ReadUserConfig(file string) {
@@ -153,10 +161,10 @@ func DecryptUserConfig() {
 func WriteUserConfig(cfgFile string) error {
 	cfg := UserCfg
 	if len(UserCfg.AuthKey) > 0 {
-		cli := ConnectEncServer()
+		var cli *rpc.RequestProcessorClient
 		m := make(map[string]Remote)
 		for k, v := range cfg.Remotes {
-			m[k] = encryptRemote(cli, v)
+			m[k], cli = encryptRemote(cli, v)
 		}
 		cfg.Remotes = m
 	}
@@ -195,12 +203,19 @@ func ConvertMap(in interface{}) interface{} {
 			out[fmt.Sprint(k)] = ConvertMap(v)
 		}
 		return out
-	} else if sp, ok := in.(map[string]interface{}); ok {
+	}
+	if mp, ok := in.(map[string]interface{}); ok {
 		out := make(map[string]interface{})
-		for k, v := range sp {
+		for k, v := range mp {
 			out[k] = ConvertMap(v)
 		}
 		return out
+	}
+	if a, ok := in.([]interface{}); ok {
+		for i, x := range a {
+			a[i] = ConvertMap(x)
+		}
+		return a
 	}
 	return in
 }
