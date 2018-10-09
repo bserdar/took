@@ -38,12 +38,16 @@ var oidcConnectWizard = []proto.SetupStep{
 		return nil
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientSecret }},
 	{Prompt: "Callback URL:", Parse: func(in string) error {
-		if len(in) == 0 {
-			return fmt.Errorf("Callback URL is required")
-		}
 		oidcCfg.Cfg.CallbackURL = in
 		return nil
-	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).CallbackURL }}}
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).CallbackURL }},
+	{Prompt: "Password grant (y/n):", Parse: func(in string) error {
+		if in == "y" || in == "Y" {
+			t := true
+			oidcCfg.Cfg.PasswordGrant = &t
+		}
+		return nil
+	}}}
 
 func init() {
 	cmd.AddCmd.AddCommand(oidcConnectCmd)
@@ -57,14 +61,13 @@ func init() {
 		cmd.MarkFlagRequired("clientId")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientSecret, "secret", "s", "", "Client Secret (required)")
 		cmd.MarkFlagRequired("secret")
-		cmd.Flags().StringVarP(&oidcCfg.Cfg.CallbackURL, "callback-url", "b", "", "Callback URL (required)")
-		cmd.MarkFlagRequired("callback-url")
+		cmd.Flags().StringVarP(&oidcCfg.Cfg.CallbackURL, "callback-url", "b", "", "Callback URL")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.Profile, "server", "e", "", "Server profile to use. Either a server profile or the server URL must be given")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.URL, "url", "u", "", "Server URL, if a server profile is not given")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
 		cmd.Flags().StringVarP(&oidcCfg.scopes, "scopes", "o", "", "Additional scopes to request from server (-o scope1,scope2,scope3)")
-		cmd.Flags().BoolVarP(&oidcCfg.Cfg.PasswordGrant, "pwd", "p", false, "Password grant")
+		cmd.Flags().BoolP("pwd", "p", false, "Password grant")
 		if cfg.InsecureAllowed() {
 			cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
 		}
@@ -95,7 +98,7 @@ var oidcConnectUpdateCmd = &cobra.Command{
 		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; !ok {
 			log.Fatalf("Remote %s does not exist", oidcCfg.Name)
 		}
-		parseOidc()
+		parseOidc(c)
 	}}
 
 var oidcConnectCmd = &cobra.Command{
@@ -128,10 +131,10 @@ Or you can add configuration by defining the server URL and other server attribu
 		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; ok {
 			log.Fatalf("Remote %s already exists", oidcCfg.Name)
 		}
-		parseOidc()
+		parseOidc(c)
 	}}
 
-func parseOidc() {
+func parseOidc(c *cobra.Command) {
 	// There must be either a valid server profile, or server URL
 	if len(oidcCfg.Cfg.URL) == 0 {
 		if len(oidcCfg.Cfg.Profile) == 0 {
@@ -151,6 +154,12 @@ func parseOidc() {
 			}
 		}
 	}
+	pwdFlag := c.Flags().Lookup("pwd")
+	if pwdFlag.Changed {
+		x, _ := c.Flags().GetBool("pwd")
+		oidcCfg.Cfg.PasswordGrant = &x
+	}
+
 	var formCfg HTMLFormConfig
 	if len(oidcCfg.form) > 0 {
 		err := json.Unmarshal([]byte(oidcCfg.form), &formCfg)

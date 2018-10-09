@@ -17,9 +17,26 @@ import (
 	"github.com/bserdar/took/proto"
 )
 
+var decryptDur time.Duration
+
 func init() {
 	RootCmd.AddCommand(encryptCmd)
 	RootCmd.AddCommand(decryptCmd)
+
+	decryptCmd.Flags().DurationVarP(&decryptDur, "timeout", "t", 10*time.Minute, "Timeout duration. Decryption will stop after this much idle time. Default 10 minutes. 0m means never")
+}
+
+func askAndConfirmPwd() string {
+top:
+	pwd := proto.AskPasswordWithPrompt("Password: ")
+	if len(pwd) == 0 {
+		return ""
+	}
+	if proto.AskPasswordWithPrompt("Confirm password: ") != pwd {
+		fmt.Println("Passwords do not match!")
+		goto top
+	}
+	return pwd
 }
 
 var encryptCmd = &cobra.Command{
@@ -37,14 +54,11 @@ There is no way to rever this operation. Do you want to continue(y/N)?`)
 		if ans != "y" {
 			return
 		}
-		pwd := proto.AskPasswordWithPrompt("Password: ")
+
+		pwd := askAndConfirmPwd()
 		if len(pwd) == 0 {
 			return
 		}
-		if proto.AskPasswordWithPrompt("Confirm password: ") != pwd {
-			panic("Passwords do not match")
-		}
-
 		srv, err := crypta.InitServer(pwd)
 		if err != nil {
 			panic(err)
@@ -112,7 +126,7 @@ var decryptCmd = &cobra.Command{
 				panic(e)
 			}
 			os.Remove(socketName)
-			e = rpc.RPCServer(socketName, s, cfg.UserCfg.AuthKey, 10*time.Minute)
+			e = rpc.RPCServer(socketName, s, cfg.UserCfg.AuthKey, decryptDur)
 			if e != nil {
 				panic(e)
 			}
@@ -122,7 +136,7 @@ var decryptCmd = &cobra.Command{
 			if err != nil {
 				panic(err)
 			}
-			cmd := exec.Command(os.Args[0], "decrypt", "x")
+			cmd := exec.Command(os.Args[0], "decrypt", "x", "-t", decryptDur.String())
 			wr, _ := cmd.StdinPipe()
 			cmd.Start()
 			wr.Write([]byte(pwd))

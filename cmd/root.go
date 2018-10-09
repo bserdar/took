@@ -57,6 +57,7 @@ func getConfigFile() string {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	first := false
 	cfgf := getConfigFile()
 	_, err := os.Stat(cfgf)
 	if os.IsNotExist(err) && cfgFile == "" {
@@ -65,12 +66,16 @@ func initConfig() {
 			log.Fatalf("%s", err)
 		}
 		f.Close()
+		first = true
 	}
 	cfg.ReadUserConfig(getConfigFile())
 	if verbose {
 		log.SetLevel(log.DebugLevel)
 	} else {
 		log.SetLevel(log.ErrorLevel)
+	}
+	if first {
+		firstRun()
 	}
 }
 

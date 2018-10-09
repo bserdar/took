@@ -80,7 +80,8 @@ func (p *Protocol) GetConfig() Config {
 		cfg.Decode(profile.Configuration, &sp)
 		ret.ServerProfile = ret.ServerProfile.Merge(sp)
 	}
-	return ret.Merge(p.Defaults)
+	ret = ret.Merge(p.Defaults)
+	return ret
 }
 
 func init() {
@@ -172,7 +173,8 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())
 	conf.Scopes = append(conf.Scopes, cfg.AdditionalScopes...)
-	if cfg.PasswordGrant {
+	log.Debugf("Password grant: %v", cfg.PasswordGrant)
+	if cfg.PasswordGrant != nil && *cfg.PasswordGrant {
 		var password string
 		if len(request.Password) > 0 {
 			password = request.Password

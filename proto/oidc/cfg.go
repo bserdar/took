@@ -6,7 +6,8 @@ type ServerProfile struct {
 	AuthAPI          string
 	Form             *HTMLFormConfig
 	Insecure         bool
-	AdditionalScopes []string
+	PasswordGrant    *bool    `yaml:"passwordgrant,omitempty"`
+	AdditionalScopes []string `yaml:"additionalscopes,omitempty"`
 }
 
 // Merge sets any unset field in s from in, and returns the merged copy
@@ -15,6 +16,10 @@ func (s ServerProfile) Merge(in ServerProfile) ServerProfile {
 		TokenAPI: wdef(s.TokenAPI, in.TokenAPI),
 		AuthAPI:  wdef(s.AuthAPI, in.AuthAPI)}
 	ret.Insecure = s.Insecure || in.Insecure
+	ret.PasswordGrant = s.PasswordGrant
+	if ret.PasswordGrant == nil {
+		ret.PasswordGrant = in.PasswordGrant
+	}
 	ret.Form = s.Form
 	if ret.Form == nil {
 		ret.Form = in.Form
@@ -30,7 +35,6 @@ type Config struct {
 	ClientId      string
 	ClientSecret  string
 	CallbackURL   string
-	PasswordGrant bool
 }
 
 // Merge sets the unset fields of c from defaults
@@ -39,7 +43,6 @@ func (c Config) Merge(defaults Config) Config {
 		ClientSecret: wdef(c.ClientSecret, defaults.ClientSecret),
 		CallbackURL:  wdef(c.CallbackURL, defaults.CallbackURL)}
 	ret.ServerProfile = c.ServerProfile.Merge(defaults.ServerProfile)
-	ret.PasswordGrant = c.PasswordGrant
 	return ret
 }
 func wdef(s, def string) string {

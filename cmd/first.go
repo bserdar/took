@@ -1,0 +1,38 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/bserdar/took/cfg"
+	"github.com/bserdar/took/crypta"
+	"github.com/bserdar/took/proto"
+)
+
+func firstRun() {
+	fmt.Println(`A new took.yaml file is created to store your API credentials and tokens.
+You have the option to keep these credentials and tokens as plain text, however password
+encryption will prevent accidental disclosure.`)
+again:
+	ans := proto.Ask("Do you want to encrypt the configuration? (Y/n) ")
+	if ans == "y" || ans == "Y" {
+		pwd := askAndConfirmPwd()
+		if len(pwd) == 0 {
+			return
+		}
+		srv, err := crypta.InitServer(pwd)
+		if err != nil {
+			panic(err)
+		}
+		cfg.UserCfg.AuthKey, err = srv.GetAuthKey()
+		if err != nil {
+			panic(err)
+		}
+		WriteUserConfig()
+		fmt.Println("An encrypted configuration file is created. Please use 'took decrypt' to start using took")
+		os.Exit(0)
+	} else if ans == "n" || ans == "N" {
+	} else {
+		goto again
+	}
+}
