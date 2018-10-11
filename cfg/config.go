@@ -2,19 +2,25 @@ package cfg
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
+	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
 	yml "gopkg.in/yaml.v2"
 
+	"github.com/bserdar/took/crypta"
 	"github.com/bserdar/took/crypta/rpc"
 )
 
 var UserCfg, CommonCfg Configuration
+
+var DefaultEncTimeout = 10 * time.Minute
 
 type Configuration struct {
 	AuthKey        string             `yaml:"key,omitempty"`
@@ -113,7 +119,7 @@ func decrypt(cli *rpc.RequestProcessorClient, in string) map[string]interface{} 
 func encrypt(cli *rpc.RequestProcessorClient, in interface{}) (string, *rpc.RequestProcessorClient) {
 	s, _ := json.Marshal(in)
 	if cli == nil {
-		cli = ConnectEncServer()
+		cli = MustConnectEncServer()
 	}
 	ret, _ := cli.Encrypt(string(s))
 	return ret, cli
@@ -149,7 +155,14 @@ func ReadUserConfig(file string) {
 
 func DecryptUserConfig() {
 	if len(UserCfg.AuthKey) > 0 {
-		cli := ConnectEncServer()
+		cli, err := ConnectEncServer()
+		if err != nil {
+			AskPasswordStartDecrypt(DefaultEncTimeout)
+			cli, err = ConnectEncServer()
+			if err != nil {
+				panic(err)
+			}
+		}
 		m := make(map[string]Remote)
 		for k, v := range UserCfg.Remotes {
 			m[k] = decryptRemote(cli, v)
@@ -220,19 +233,62 @@ func ConvertMap(in interface{}) interface{} {
 	return in
 }
 
-func ConnectEncServer() *rpc.RequestProcessorClient {
+func ConnectEncServer() (*rpc.RequestProcessorClient, error) {
 	socketName, e := homedir.Expand("~/.took.s")
 	if e != nil {
-		panic(e)
+		return nil, e
 	}
 	cli, err := rpc.NewRequestProcessorClient("unix", socketName)
 	if err != nil {
-		panic("You need to use took decrypt to decrypt the tokens")
+		return nil, errors.New("You need to use took decrypt to decrypt the tokens")
 	}
 
+	return cli, nil
+}
+
+func MustConnectEncServer() *rpc.RequestProcessorClient {
+	cli, err := ConnectEncServer()
+	if err != nil {
+		panic(err)
+	}
 	return cli
 }
 
 func InsecureAllowed() bool {
 	return strings.Contains(os.Args[0], "-insecure")
+}
+
+func ValidateInsecureURL(url string) {
+	if strings.HasPrefix(strings.ToLower(url), "http://") {
+		if !InsecureAllowed() {
+			fmt.Println("You are using http:// URLs instead of https://. This is not secure. You have to run took as took-insecure to use unencrypted URLs")
+			os.Exit(1)
+		}
+	}
+}
+
+// AskPasswordStartDecrypt asks password and starts the decrypt server with the given timout
+func AskPasswordStartDecrypt(timeout time.Duration) {
+	StartDecrypt(AskPasswordWithPrompt("Configuration/Token encryption password: "), timeout)
+}
+
+//StartDecrypt starts another copy of took with decrypt x flag, and passes the password. Panics on fail
+func StartDecrypt(password string, timeout time.Duration) {
+	_, err := crypta.NewServer(password, UserCfg.AuthKey)
+	if err != nil {
+		panic(err)
+	}
+	cmd := exec.Command(os.Args[0], "decrypt", "x", "-t", timeout.String())
+	wr, _ := cmd.StdinPipe()
+	cmd.Start()
+	wr.Write([]byte(password))
+	wr.Write([]byte("\n"))
+	for i := 0; i < 10; i++ {
+		time.Sleep(1 * time.Second)
+		_, err := ConnectEncServer()
+		if err == nil {
+			return
+		}
+	}
+	panic("Cannot run decrypt server")
 }

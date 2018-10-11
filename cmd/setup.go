@@ -35,7 +35,7 @@ var setupCmd = &cobra.Command{
 				buf.WriteString(fmt.Sprintf("%s (%s)\n", k, v.Type))
 			}
 			buf.WriteString("Enter the server profile for which you want to add a new authentication configuration:")
-			serverProfileName = proto.Ask(buf.String())
+			serverProfileName = cfg.Ask(buf.String())
 		} else {
 			log.Fatalf("There are no known server profiles")
 		}
@@ -46,7 +46,7 @@ var setupCmd = &cobra.Command{
 		}
 
 	askName:
-		cfgName := proto.Ask("Enter name of the new authentication configuration:")
+		cfgName := cfg.Ask("Enter name of the new authentication configuration:")
 		if _, ok := cfg.UserCfg.Remotes[cfgName]; ok {
 			fmt.Printf("%s already exists\n", cfgName)
 			goto askName

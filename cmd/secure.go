@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -14,7 +13,6 @@ import (
 	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/crypta"
 	"github.com/bserdar/took/crypta/rpc"
-	"github.com/bserdar/took/proto"
 )
 
 var decryptDur time.Duration
@@ -23,16 +21,16 @@ func init() {
 	RootCmd.AddCommand(encryptCmd)
 	RootCmd.AddCommand(decryptCmd)
 
-	decryptCmd.Flags().DurationVarP(&decryptDur, "timeout", "t", 10*time.Minute, "Timeout duration. Decryption will stop after this much idle time. Default 10 minutes. 0m means never")
+	decryptCmd.Flags().DurationVarP(&decryptDur, "timeout", "t", cfg.DefaultEncTimeout, "Timeout duration. Decryption will stop after this much idle time. Default 10 minutes. 0m means never")
 }
 
 func askAndConfirmPwd() string {
 top:
-	pwd := proto.AskPasswordWithPrompt("Password: ")
+	pwd := cfg.AskPasswordWithPrompt("Configuration/Token encryption password: ")
 	if len(pwd) == 0 {
 		return ""
 	}
-	if proto.AskPasswordWithPrompt("Confirm password: ") != pwd {
+	if cfg.AskPasswordWithPrompt("Confirm password: ") != pwd {
 		fmt.Println("Passwords do not match!")
 		goto top
 	}
@@ -46,10 +44,12 @@ var encryptCmd = &cobra.Command{
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(cfg.UserCfg.AuthKey) > 0 {
-			fmt.Printf("Configuration file is already encrypted\n")
+			if !firstRunRan {
+				fmt.Printf("Configuration file is already encrypted\n")
+			}
 			return
 		}
-		ans := proto.Ask(`This operation will encrypt the user configuration file using a password.
+		ans := cfg.Ask(`This operation will encrypt the user configuration file using a password.
 There is no way to rever this operation. Do you want to continue(y/N)?`)
 		if ans != "y" {
 			return
@@ -131,15 +131,6 @@ var decryptCmd = &cobra.Command{
 				panic(e)
 			}
 		} else {
-			pwd := proto.AskPasswordWithPrompt("Password: ")
-			_, err := crypta.NewServer(pwd, cfg.UserCfg.AuthKey)
-			if err != nil {
-				panic(err)
-			}
-			cmd := exec.Command(os.Args[0], "decrypt", "x", "-t", decryptDur.String())
-			wr, _ := cmd.StdinPipe()
-			cmd.Start()
-			wr.Write([]byte(pwd))
-			wr.Write([]byte("\n"))
+			cfg.AskPasswordStartDecrypt(decryptDur)
 		}
 	}}
