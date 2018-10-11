@@ -104,8 +104,8 @@ func (t TokenData) FormatToken(out proto.OutputOption) string {
 
 // GetToken gets a token
 func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, error) {
-	cfg := p.GetConfig()
-	if cfg.Insecure {
+	config := p.GetConfig()
+	if config.Insecure {
 		proto.InsecureTLS = true
 	}
 
@@ -128,7 +128,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	}
 	p.Tokens.Last = tok.Username
 
-	serverData, err := GetServerData(cfg.URL)
+	serverData, err := GetServerData(config.URL)
 	if err != nil {
 		return "", nil, err
 	}
@@ -153,10 +153,10 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	}
 
 	conf := &oauth2.Config{
-		ClientID:     cfg.ClientId,
-		ClientSecret: cfg.ClientSecret,
+		ClientID:     config.ClientId,
+		ClientSecret: config.ClientSecret,
 		Scopes:       []string{"openid"},
-		RedirectURL:  cfg.CallbackURL,
+		RedirectURL:  config.CallbackURL,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  p.GetAuthURL(serverData),
 			TokenURL: p.GetTokenURL(serverData)}}
@@ -172,14 +172,14 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	var token *oauth2.Token
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())
-	conf.Scopes = append(conf.Scopes, cfg.AdditionalScopes...)
-	log.Debugf("Password grant: %v", cfg.PasswordGrant)
-	if cfg.PasswordGrant != nil && *cfg.PasswordGrant {
+	conf.Scopes = append(conf.Scopes, config.AdditionalScopes...)
+	log.Debugf("Password grant: %v", config.PasswordGrant)
+	if config.PasswordGrant != nil && *config.PasswordGrant {
 		var password string
 		if len(request.Password) > 0 {
 			password = request.Password
 		} else {
-			password = proto.AskPassword()
+			password = cfg.AskPassword()
 		}
 		token, err = conf.PasswordCredentialsToken(ctx, userName, password)
 		if err != nil {
@@ -188,15 +188,15 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	} else {
 		authUrl := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
 		var redirectedUrl *url.URL
-		if cfg.Form != nil {
-			redirectedUrl = FormAuth(*cfg.Form, authUrl, userName, request.Password)
+		if config.Form != nil {
+			redirectedUrl = FormAuth(*config.Form, authUrl, userName, request.Password)
 			if redirectedUrl == nil {
 				fmt.Printf("Authentication failed\n")
 			}
 		}
 		if redirectedUrl == nil {
 			fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
-			inUrl := proto.Ask("After authentication, copy/paste the URL here:")
+			inUrl := cfg.Ask("After authentication, copy/paste the URL here:")
 			redirectedUrl, err = url.Parse(inUrl)
 			if err != nil {
 				log.Fatal(err.Error())

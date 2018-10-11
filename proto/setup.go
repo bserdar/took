@@ -3,6 +3,8 @@ package proto
 import (
 	"fmt"
 	"strings"
+
+	"github.com/bserdar/took/cfg"
 )
 
 type SetupStep struct {
@@ -34,9 +36,9 @@ retry:
 		} else {
 			prompt = s.Prompt
 		}
-		value = Ask(fmt.Sprintf("%s (%s):", prompt, def))
+		value = cfg.Ask(fmt.Sprintf("%s (%s):", prompt, def))
 	} else {
-		value = Ask(s.Prompt)
+		value = cfg.Ask(s.Prompt)
 	}
 	if len(value) == 0 {
 		value = def

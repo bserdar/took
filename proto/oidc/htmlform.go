@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 
+	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/proto"
 )
 
@@ -120,24 +121,24 @@ func itrForms(formID string, requiredFields []string, node *html.Node) (string, 
 }
 
 // FillForm processes the form, prompts the user for field values, and returns the form to be submitted
-func FillForm(cfg HTMLFormConfig, page *html.Node, userName, password string) (action string, values url.Values, err error) {
+func FillForm(config HTMLFormConfig, page *html.Node, userName, password string) (action string, values url.Values, err error) {
 	requiredFields := make([]string, 0)
-	for _, f := range cfg.Fields {
+	for _, f := range config.Fields {
 		requiredFields = append(requiredFields, f.Input)
 	}
-	action, values = itrForms(cfg.ID, requiredFields, page)
+	action, values = itrForms(config.ID, requiredFields, page)
 	if action != "" {
-		for _, field := range cfg.Fields {
-			if field.Input == cfg.UsernameField && len(userName) > 0 {
+		for _, field := range config.Fields {
+			if field.Input == config.UsernameField && len(userName) > 0 {
 				// This is the username
 				values.Set(field.Input, userName)
-			} else if field.Input == cfg.PasswordField && len(password) > 0 {
+			} else if field.Input == config.PasswordField && len(password) > 0 {
 				// This is the password
 				values.Set(field.Input, password)
 			} else {
-				ask := proto.Ask
+				ask := cfg.Ask
 				if field.Password {
-					ask = proto.AskPasswordWithPrompt
+					ask = cfg.AskPasswordWithPrompt
 				}
 				if field.Prompt != "" {
 					if field.Value == "" {
