@@ -4,7 +4,7 @@ flow and direct access (resource owner password credentials grant).
 # What does it do?
 
 The main purpose of took is to maintain tokens for API
-invocations. Once things are setup, you can run:
+invocations. Once things are set up, you can run:
 
 ```
    took token myapi myuser
@@ -83,8 +83,7 @@ Then, when you run
   took token prod myuser
 ```
 It will ask you to visit a URL. That URL will authenticate the user, and redirect to the
-callback URL, 'http://callback'. Copy this URL, and paste it to the command line, and it 
-should print out a new token.
+callback URL, 'http://callback'. Copy this URL, and paste it to the command line, and it should print out a new token.
 
 ## Direct Access Grants Flow
 
@@ -100,7 +99,7 @@ direct access grants flow for this client.
 
 ## Hack: Bypassing the server login page
 
-It might be possible to describe the authentication form used by you server, so took can emulate
+It might be possible to describe the authentication form used by your server, so took can emulate
 what the browser does to authenticate a user. When you go to the login page with the browser,
 inspect the HTML page, and identify the forms and input fields. For instance, my server has the following
 form:
@@ -139,7 +138,7 @@ form, and get the tokens.
 
 # Multiple users 
 
-Took can maintain tokens for multiple users. If username is ommitted, the last username will be used:
+Took can maintain tokens for multiple users. If username is omitted, the last username will be used:
 
 ```
   took token prod user1
