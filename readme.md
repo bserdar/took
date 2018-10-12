@@ -3,8 +3,9 @@ flow and direct access (resource owner password credentials grant).
 
 # What does it do?
 
-The main purpose of took is to maintain tokens for API
-invocations. Once things are set up, you can run:
+The main purpose of took is to maintain access tokens for API
+invocations and refresh them as needed. Once things are set up, you
+can run:
 
 ```
    took token myapi myuser
@@ -33,9 +34,10 @@ Run
 ```
 
 If this is the first time took is run, this will ask you if you want
-to keep your configuration and tokens encrypted on disk. If you ran
-took before, the setup command will take you through the setup of an
-OIDC authorization server based on a know server profile.
+to keep your configuration and tokens encrypted on disk. Once you
+decide whether you want to do that or not and enter your password if
+you do, the setup command will take you through the setup of an OIDC
+authorization server based on a known server profile.
 
  * Enter the name of the server profile corresponding to the server you want to authenticate with
  * Assign a name to this authentication configuration
@@ -53,12 +55,17 @@ After entering all the information, you can run:
 
 This will take you through authentication, and will print out your token.
 
+Server profile information is stored in /etc/took.yaml. You can add
+more server profiles by editing that file.
 
-## Add new authentication server 
+Setup command is only useful to add a new authentication configuration
+based on a server profile. To add an authentication configuration, use
+the "took add" command.
 
-You can use this authentication server setup method instead of took
-setup. If your authentication server is not listed as one of the known
-server profiles (defined in /etc/took.yaml), then you have to use this
+## Add new authentication server using the "add" command
+
+If your authentication server is not listed as one of the known server
+profiles (defined in /etc/took.yaml), then you have to use this
 method.
 
 ```
@@ -97,54 +104,22 @@ To use this, the authentication server must be configured to support
 direct access grants flow for this client.
 
 
-## Hack: Bypassing the server login page
-
-It might be possible to describe the authentication form used by your server, so took can emulate
-what the browser does to authenticate a user. When you go to the login page with the browser,
-inspect the HTML page, and identify the forms and input fields. For instance, my server has the following
-form:
-```
-<form id="kc-form-login" class="form-horizontal" onsubmit="login.disabled = true; return true;" 
-action="https://sso.someserver/auth/realms/myrealm/login-actions/authenticate?code=QWI1Bmwm0&amp;execution=bca7381b-65b-4196-936c-7f8941f121&amp;client_id=security-admin-console&amp;tab_id=uRub-YYUVuk" method="post">
-  <div class="form-group">
-    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-3">
-       <label for="username" class="control-label">Username or email</label>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-9">
-      <input tabindex="1" id="username" class="form-control" name="username" value="" type="text" autofocus autocomplete="off" />
-     </div>
-  </div>
-  <div class="form-group">
-    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-3">
-       <label for="password" class="control-label">Password</label>
-    </div>
-    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-9">
-      <input tabindex="2" id="password" class="form-control" name="password" type="password" autocomplete="off" />
-   </div>
-
-```
-This HTML page has a form with id="kc-form-login", containing two input fields: username and password. 
-You can define this structure with the -F flag:
-
-```
-took add oidc -n myapi -s 123 -b http://callback -c abc -u https://myserver \
- -F '{"id":"kc-form-login","usernameField":"username","passwordField":"password","fields":[{"input":"username","prompt":"User name"},\
-    {"input":"password","prompt":"Password","password":true}]}'
-```
-
-When a new token is requested, took will ask for the username and password fields, submit the HTML
-form, and get the tokens.
-
-
 # Multiple users 
 
 Took can maintain tokens for multiple users. If username is omitted, the last username will be used:
 
 ```
-  took token prod user1
+  took token myapi user1
   <token for user1>
-  took token prod
+
+  took token myapi
   <token for user1>
+
+  took token myapi user2
+  <token for user2>
+
+  took token myapi
+  <token for user2>
 ```
 
 # (In)security
@@ -214,4 +189,42 @@ create a symlink.
 When run as took-insecure, you can use the -k flag to disable
 certificate validation. Also, took will not complain if you make calls
 to http:// servers. 
+
+# Hack: Bypassing the server login page
+
+It might be possible to describe the authentication form used by your server, so took can emulate
+what the browser does to authenticate a user. When you go to the login page with the browser,
+inspect the HTML page, and identify the forms and input fields. For instance, my server has the following
+form:
+```
+<form id="kc-form-login" class="form-horizontal" onsubmit="login.disabled = true; return true;" 
+action="https://sso.someserver/auth/realms/myrealm/login-actions/authenticate?code=QWI1Bmwm0&amp;execution=bca7381b-65b-4196-936c-7f8941f121&amp;client_id=security-admin-console&amp;tab_id=uRub-YYUVuk" method="post">
+  <div class="form-group">
+    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-3">
+       <label for="username" class="control-label">Username or email</label>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-9">
+      <input tabindex="1" id="username" class="form-control" name="username" value="" type="text" autofocus autocomplete="off" />
+     </div>
+  </div>
+  <div class="form-group">
+    <div class="col-xs-12 col-sm-12 col-md-4 col-lg-3">
+       <label for="password" class="control-label">Password</label>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-9">
+      <input tabindex="2" id="password" class="form-control" name="password" type="password" autocomplete="off" />
+   </div>
+
+```
+This HTML page has a form with id="kc-form-login", containing two input fields: username and password. 
+You can define this structure with the -F flag:
+
+```
+took add oidc -n myapi -s 123 -b http://callback -c abc -u https://myserver \
+ -F '{"id":"kc-form-login","usernameField":"username","passwordField":"password","fields":[{"input":"username","prompt":"User name"},\
+    {"input":"password","prompt":"Password","password":true}]}'
+```
+
+When a new token is requested, took will ask for the username and password fields, submit the HTML
+form, and get the tokens.
 
