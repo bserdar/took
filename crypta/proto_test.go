@@ -53,7 +53,7 @@ func TestLoginEmul2(t *testing.T) {
 	req.Data = "31kkFfT22SpohcRmgvzXjCMLsqp+NtKctwRcJA8aY4iZvJitw36wxyjt3boDTjG1pQS1oWVouGFSXfvQ7Ecqcn90CxbfGhxdD4I/4BeBaKArbk90K0RgtHHApuWQ7NT9y0fU5r1RCZY1RjDBPYxI8tLvPtKhEudq4Del0If4Ae4rHHiGAbZO6KhmMFPeuXn5uFPG3ne8R+QUvaDmotGXcKT8+x51yRGbsTp2XBW4y6mCpdFdbxkHIIv2RSt6p1fthd/PQZ6MFl4EKkT11MediJqM5hhhiWGpIGrhaeQ8elGn0vcdkdoD"
 	var rsp DataResponse
 	rp2.Decrypt(req, &rsp)
-	if rsp.Data != "test" {
+	if rsp.Data != `{"additionalscopes":[],"authapi":"","callbackurl":"http://localhost","clientid":"04dd1960","clientsecret":"ff7b40cee9ab8770706f2f5fcb00ab8e","form":null,"insecure":false,"passwordgrant":true,"profile":"rhqa","tokenapi":"","url":""}` {
 		t.Errorf("Decrypt error %s != %s", rsp.Data, req.Data)
 	}
 }
