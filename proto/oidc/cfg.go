@@ -4,7 +4,7 @@ package oidc
 type ServerProfile struct {
 	URL              string          `yaml:"url,omitempty" mapstructure:"url,omitempty"`
 	TokenAPI         string          `yaml:"tokenapi,omitempty" mapstructure:"tokenapi,omitempty"`
-	AuthAPI          string          `yaml:"authapi,omitepmty" mapstructure:"authapi,omitempty"`
+	AuthAPI          string          `yaml:"authapi,omitempty" mapstructure:"authapi,omitempty"`
 	Form             *HTMLFormConfig `yaml:"form,omitempty" mapstructure:"form,omitempty"`
 	Insecure         bool
 	PasswordGrant    *bool    `yaml:"passwordgrant,omitempty"`

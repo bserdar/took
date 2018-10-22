@@ -36,7 +36,7 @@ lint:
 
 build: fmt vet lint 
 	@echo "+ $@"
-	@go build  $(PKGS)
+	@go build 
 
 test:
 	@echo "+ $@"
