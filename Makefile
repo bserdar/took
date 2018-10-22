@@ -40,10 +40,8 @@ build: fmt vet lint
 
 test:
 	@echo "+ $@"
-	go test -test.short  $(PKGS) 
+	go test  $(PKGS) 
 
 clean:
 	@echo "+ $@"
-	@rm -rf "${PREFIX}/bin/datasource" 
-	@rm -rf "${PREFIX}/bin/apidoc" 
 
