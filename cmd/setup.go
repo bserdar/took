@@ -54,7 +54,7 @@ var setupCmd = &cobra.Command{
 
 		protocol := proto.Get(serverProfile.Type)
 		if protocol == nil {
-			panic("Invalid protocol")
+			log.Fatal("Invalid protocol")
 		}
 
 		var rmt interface{}
@@ -72,7 +72,7 @@ var setupCmd = &cobra.Command{
 
 		wiz, command := protocol.InitSetupWizard(cfgName, serverProfileName, serverProfile)
 		if wiz == nil {
-			panic("unknown protocol")
+			log.Fatal("unknown protocol")
 		}
 		for _, s := range wiz {
 			s.Run(rmt)

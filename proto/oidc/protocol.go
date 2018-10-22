@@ -24,6 +24,7 @@ type Data struct {
 	Tokens []TokenData
 }
 
+// TokenData contains the access and refresh token with username
 type TokenData struct {
 	Username     string
 	AccessToken  string
@@ -31,6 +32,7 @@ type TokenData struct {
 	Type         string
 }
 
+// Protocol contains the oidc config, default congfig, and tokens
 type Protocol struct {
 	Cfg      Config
 	Defaults Config
@@ -46,6 +48,7 @@ func (d Data) findUser(username string) *TokenData {
 	return nil
 }
 
+// DecodeCfg converts map[string]interface{} into Config{}
 func (p *Protocol) DecodeCfg(in interface{}) (interface{}, error) {
 	if in != nil {
 		out := Config{}
@@ -55,6 +58,7 @@ func (p *Protocol) DecodeCfg(in interface{}) (interface{}, error) {
 	return nil, nil
 }
 
+// SetCfg sets the p.Cfg and p.Defaults from user and common configs
 func (p *Protocol) SetCfg(user, common cfg.Remote) {
 	if user.Configuration != nil {
 		cfg.Decode(user.Configuration, &p.Cfg)
@@ -67,6 +71,7 @@ func (p *Protocol) SetCfg(user, common cfg.Remote) {
 	}
 }
 
+// GetConfig merges default cfg with user cfg and returns a merged copy
 func (p *Protocol) GetConfig() Config {
 	ret := p.Cfg
 
@@ -93,6 +98,7 @@ func init() {
 	})
 }
 
+// FormatToken converts token to string based on the output options
 func (t TokenData) FormatToken(out proto.OutputOption) string {
 	switch out {
 	case proto.OutputHeader:
@@ -153,7 +159,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	}
 
 	conf := &oauth2.Config{
-		ClientID:     config.ClientId,
+		ClientID:     config.ClientID,
 		ClientSecret: config.ClientSecret,
 		Scopes:       []string{"openid"},
 		RedirectURL:  config.CallbackURL,
@@ -179,33 +185,33 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 		if len(request.Password) > 0 {
 			password = request.Password
 		} else {
-			password = cfg.AskPassword()
+			password = cfg.AskPasswordWithPrompt(fmt.Sprintf("Password for %s: ", userName))
 		}
 		token, err = conf.PasswordCredentialsToken(ctx, userName, password)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		authUrl := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
-		var redirectedUrl *url.URL
+		authURL := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
+		var redirectedURL *url.URL
 		if config.Form != nil {
-			redirectedUrl = FormAuth(*config.Form, authUrl, userName, request.Password)
-			if redirectedUrl == nil {
+			redirectedURL = FormAuth(*config.Form, authURL, userName, request.Password)
+			if redirectedURL == nil {
 				fmt.Printf("Authentication failed\n")
 			}
 		}
-		if redirectedUrl == nil {
-			fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authUrl)
-			inUrl := cfg.Ask("After authentication, copy/paste the URL here:")
-			redirectedUrl, err = url.Parse(inUrl)
+		if redirectedURL == nil {
+			fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authURL)
+			inURL := cfg.Ask("After authentication, copy/paste the URL here:")
+			redirectedURL, err = url.Parse(inURL)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
-			if state != redirectedUrl.Query().Get("state") {
+			if state != redirectedURL.Query().Get("state") {
 				log.Fatal("Invalid state")
 			}
 		}
-		token, err = conf.Exchange(ctx, redirectedUrl.Query().Get("code"))
+		token, err = conf.Exchange(ctx, redirectedURL.Query().Get("code"))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -218,9 +224,10 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	return tok.FormatToken(request.Out), p.Tokens, nil
 }
 
+// Refresh refreshes the token
 func (p *Protocol) Refresh(tok *TokenData, s ServerData) error {
 	cfg := p.GetConfig()
-	t, err := RefreshToken(cfg.ClientId, cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL(s))
+	t, err := RefreshToken(cfg.ClientID, cfg.ClientSecret, tok.RefreshToken, p.GetTokenURL(s))
 	if err != nil {
 		return err
 	}
@@ -230,6 +237,7 @@ func (p *Protocol) Refresh(tok *TokenData, s ServerData) error {
 	return nil
 }
 
+// GetTokenURL retutrns the token URL on the auth server
 func (p *Protocol) GetTokenURL(s ServerData) string {
 	cfg := p.GetConfig()
 	if len(cfg.TokenAPI) == 0 {
@@ -238,6 +246,7 @@ func (p *Protocol) GetTokenURL(s ServerData) string {
 	return combine(cfg.URL, cfg.TokenAPI)
 }
 
+// GetAuthURL returns the auth URL on the auth server
 func (p *Protocol) GetAuthURL(s ServerData) string {
 	cfg := p.GetConfig()
 	if len(cfg.AuthAPI) == 0 {

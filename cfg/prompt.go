@@ -3,6 +3,7 @@ package cfg
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"syscall"
 
@@ -15,7 +16,7 @@ func Ask(prompt string) string {
 	reader := bufio.NewReader(os.Stdin)
 	s, e := reader.ReadString('\n')
 	if e != nil {
-		panic(e)
+		log.Fatal(e)
 	}
 	if s[len(s)-1] == '\n' {
 		return s[:len(s)-1]
@@ -23,10 +24,12 @@ func Ask(prompt string) string {
 	return s
 }
 
+// AskUsername asks "user name" and reads input
 func AskUsername() string {
 	return Ask("User name: ")
 }
 
+// AskPassword asks "Password" and reads the password
 func AskPassword() string {
 	return AskPasswordWithPrompt("Password: ")
 }
@@ -36,7 +39,7 @@ func AskPasswordWithPrompt(prompt string) string {
 	fmt.Print(prompt)
 	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	fmt.Println("")
 	return string(bytePassword)

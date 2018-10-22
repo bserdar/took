@@ -7,6 +7,7 @@ import (
 	"github.com/bserdar/took/cfg"
 )
 
+// SetupStep is a step in the setup wizard
 type SetupStep struct {
 	Prompt       string
 	DefaultValue string
@@ -15,6 +16,7 @@ type SetupStep struct {
 	Parse      func(string) error
 }
 
+// Run runs a setup of the wizard
 func (s SetupStep) Run(remoteCfg interface{}) {
 	var def string
 

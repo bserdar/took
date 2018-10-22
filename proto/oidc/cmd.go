@@ -27,9 +27,9 @@ var oidcConnectWizard = []proto.SetupStep{
 		if len(in) == 0 {
 			return fmt.Errorf("Client id is required")
 		}
-		oidcCfg.Cfg.ClientId = in
+		oidcCfg.Cfg.ClientID = in
 		return nil
-	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientId }},
+	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientID }},
 	{Prompt: "Client secret:", Parse: func(in string) error {
 		if len(in) == 0 {
 			return fmt.Errorf("Client secret is required")
@@ -57,7 +57,7 @@ func init() {
 		cmd.Flags().StringVarP(&oidcCfg.Name, "name", "n", "", "Name of the configuration (required)")
 		cmd.MarkFlagRequired("name")
 
-		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientId, "clientId", "c", "", "Client ID (required)")
+		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientID, "clientId", "c", "", "Client ID (required)")
 		cmd.MarkFlagRequired("clientId")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientSecret, "secret", "s", "", "Client Secret (required)")
 		cmd.MarkFlagRequired("secret")
@@ -175,6 +175,7 @@ func parseOidc(c *cobra.Command) {
 	cmd.WriteUserConfig()
 }
 
+// InitSetupWizard initializes the setup wizard for oidc
 func (p *Protocol) InitSetupWizard(name string, profileName string, profile cfg.Profile) ([]proto.SetupStep, *cobra.Command) {
 	oidcCfg.Name = name
 	oidcCfg.Cfg.Profile = profileName

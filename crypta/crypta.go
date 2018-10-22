@@ -16,9 +16,13 @@ import (
 const saltSize = 32
 const rndBlockSize = 32
 
-var ErrInvalidAuthKey = errors.New("Invalid authKey")
-var ErrInvalidPassword = errors.New("Invalid password")
+// Encrypt/decrypt errors
+var (
+	ErrInvalidAuthKey  = errors.New("Invalid authKey")
+	ErrInvalidPassword = errors.New("Invalid password")
+)
 
+// Server keeps all the information necessary to encrypt/decrypt data
 type Server struct {
 	key   []byte
 	salt  []byte
@@ -91,7 +95,7 @@ func NewServer(password, authkey string) (Server, error) {
 	return ret, nil
 }
 
-// GetAuthSalt returns a string that can be used for password validation. It is:
+// GetAuthKey returns a string that can be used for password validation. It is:
 //
 //  salt iv enc(randombytes hmac)
 //

@@ -12,9 +12,9 @@ import (
 )
 
 // RefreshToken gets a new token using the refresh token
-func RefreshToken(clientId, clientSecret, refreshToken, tokenURL string) (oauth2.Token, error) {
+func RefreshToken(clientID, clientSecret, refreshToken, tokenURL string) (oauth2.Token, error) {
 	values := url.Values{}
-	values.Set("client_id", clientId)
+	values.Set("client_id", clientID)
 	values.Set("client_secret", clientSecret)
 	values.Set("refresh_token", refreshToken)
 	values.Set("grant_type", "refresh_token")

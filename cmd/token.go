@@ -28,6 +28,7 @@ func init() {
 	TokenCmd.Flags().BoolVarP(&writeHeader, "header", "e", false, "Write HTTP header, Authorization: Bearer <token>")
 }
 
+// TokenCmd is the took token command
 var TokenCmd = &cobra.Command{
 	Use:   "token",
 	Short: "Get token <config name> [username] [password]",

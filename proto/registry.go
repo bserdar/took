@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// RefreshOption is an int
 type RefreshOption int
 
 // Constants for how to get the token
@@ -15,6 +16,7 @@ const (
 	UseReAuth
 )
 
+// OutputOption is an int
 type OutputOption int
 
 // Output options
@@ -23,6 +25,7 @@ const (
 	OutputHeader
 )
 
+// TokenRequest contains token refresh and output options, and user creds
 type TokenRequest struct {
 	Refresh  RefreshOption
 	Out      OutputOption

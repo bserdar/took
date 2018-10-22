@@ -8,8 +8,8 @@ import (
 	"github.com/bserdar/took/crypta"
 )
 
-// RPCServer serves the encryption service via the unix domain socket
-func RPCServer(socketName, password, authKey string, idleTimeout time.Duration) error {
+// Server serves the encryption service via the unix domain socket
+func Server(socketName, password, authKey string, idleTimeout time.Duration) error {
 	server, err := crypta.NewServer(password, authKey)
 	if err != nil {
 		return err

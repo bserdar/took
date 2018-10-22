@@ -17,6 +17,7 @@ import (
 	"github.com/bserdar/took/proto"
 )
 
+// HTMLFormConfig defines an HTP login form structure
 type HTMLFormConfig struct {
 	// Form ID
 	ID string `json:"id,omitempty" yaml:"id,omitempty"`
@@ -27,6 +28,7 @@ type HTMLFormConfig struct {
 	Fields        []FieldConfig `json:"fields,omitempty" yaml:"fields,omitempty"`
 }
 
+// FieldConfig describes an HTML field in the HTML form
 type FieldConfig struct {
 	Input string `json:"input" yaml:"input"`
 	// If non-empty, will ask for value
@@ -46,11 +48,6 @@ func ReadPage(url string) (*html.Node, []*http.Cookie, error) {
 	node, err := html.Parse(resp.Body)
 	return node, resp.Cookies(), err
 }
-
-const (
-	st_seekingForm int = iota
-	st_inForm
-)
 
 func findAttr(attr string, n *html.Node) string {
 	for _, a := range n.Attr {
@@ -169,10 +166,10 @@ func FillForm(config HTMLFormConfig, page *html.Node, userName, password string)
 // FormAuth retrieves a login form from the authURL, parses it, asks
 // credentials, submits the form, and if everything goes fine, returns
 // the redirect URL
-func FormAuth(cfg HTMLFormConfig, authUrl string, userName, password string) *url.URL {
+func FormAuth(cfg HTMLFormConfig, authURL string, userName, password string) *url.URL {
 	var redirectedURL *url.URL
-	log.Debugf("Reading login page at %s", authUrl)
-	node, cookies, err := ReadPage(authUrl)
+	log.Debugf("Reading login page at %s", authURL)
+	node, cookies, err := ReadPage(authURL)
 	if err == nil && node != nil {
 		action, values, err := FillForm(cfg, node, userName, password)
 		log.Debugf("action=%s err=%s", action, err)

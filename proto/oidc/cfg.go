@@ -1,5 +1,6 @@
 package oidc
 
+// ServerProfile defines an OIDC auth server
 type ServerProfile struct {
 	URL              string
 	TokenAPI         string
@@ -29,17 +30,18 @@ func (s ServerProfile) Merge(in ServerProfile) ServerProfile {
 	return ret
 }
 
+// Config includes the server profile and contains user creds
 type Config struct {
 	ServerProfile `yaml:",inline" mapstructure:",squash"`
 	Profile       string
-	ClientId      string
+	ClientID      string `yaml:"clientid" mapstructure:"clientid"`
 	ClientSecret  string
 	CallbackURL   string
 }
 
 // Merge sets the unset fields of c from defaults
 func (c Config) Merge(defaults Config) Config {
-	ret := Config{ClientId: wdef(c.ClientId, defaults.ClientId),
+	ret := Config{ClientID: wdef(c.ClientID, defaults.ClientID),
 		ClientSecret: wdef(c.ClientSecret, defaults.ClientSecret),
 		CallbackURL:  wdef(c.CallbackURL, defaults.CallbackURL)}
 	ret.ServerProfile = c.ServerProfile.Merge(defaults.ServerProfile)

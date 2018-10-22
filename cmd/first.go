@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/bserdar/took/cfg"
@@ -24,11 +25,11 @@ again:
 		}
 		srv, err := crypta.InitServer(pwd)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		cfg.UserCfg.AuthKey, err = srv.GetAuthKey()
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		WriteUserConfig()
 		cfg.StartDecrypt(pwd, 10*time.Minute)

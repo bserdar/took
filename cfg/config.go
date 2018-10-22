@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,16 +19,23 @@ import (
 	"github.com/bserdar/took/crypta/rpc"
 )
 
-var UserCfg, CommonCfg Configuration
+// UserCfg is the user's config
+var UserCfg Configuration
 
+// CommonCfg is the common config from /etc/tool.yaml
+var CommonCfg Configuration
+
+// DefaultEncTimeout is 10 minutes, the default idle timeout for the took decrypt agent
 var DefaultEncTimeout = 10 * time.Minute
 
+// Configuration declares the structure of the config file
 type Configuration struct {
 	AuthKey        string             `yaml:"key,omitempty"`
 	Remotes        map[string]Remote  `yaml:"remotes,omitempty"`
 	ServerProfiles map[string]Profile `yaml:"serverProfiles,omitempty"`
 }
 
+// GetServerProfile returns a server profile by name. Returns empty profile if not found
 func (c Configuration) GetServerProfile(name string) Profile {
 	if len(name) > 0 {
 		if c.ServerProfiles != nil {
@@ -49,24 +57,31 @@ func GetServerProfile(name string) Profile {
 	return CommonCfg.GetServerProfile(name)
 }
 
+// Profile is combines the type and the type-specific configuration of a server profile
 type Profile struct {
 	Type          string      `yaml:"type"`
 	Configuration interface{} `yaml:"cfg,omitempty"`
 }
 
+// Remote defines a remote auth configuration
 type Remote struct {
-	Type          string      `yaml:"type"`
+	// Type is the auth protocol
+	Type string `yaml:"type"`
+	// Configuration is the prototocol specific configuration
 	Configuration interface{} `yaml:"cfg,omitempty"`
-	Data          interface{} `yaml:"data,omitempty"`
-	ECfg          string      `yaml:"ecfg,omitempty"`
-	EData         string      `yaml:"edata,omitempty"`
+	// Data contains the protocol specific token information
+	Data interface{} `yaml:"data,omitempty"`
+	// ECfg is the encrypted configuration. Only one of Configuration or Ecfg is nonempty
+	ECfg string `yaml:"ecfg,omitempty"`
+	// EData is the encrypted data. Only one of Data or EData is nonempty
+	EData string `yaml:"edata,omitempty"`
 }
 
 // ReadConfig reads the cfgFile.
 func ReadConfig(cfgFile string) Configuration {
 	c, err := readConfig(cfgFile)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return c
 }
@@ -106,12 +121,12 @@ func ReadCommonConfig() Configuration {
 func decrypt(cli *rpc.RequestProcessorClient, in string) map[string]interface{} {
 	out, err := cli.Decrypt(in)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	var m map[string]interface{}
 	err = json.Unmarshal([]byte(out), &m)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return m
 }
@@ -149,10 +164,14 @@ func encryptRemote(cli *rpc.RequestProcessorClient, in Remote) (Remote, *rpc.Req
 	return in, cli
 }
 
+// ReadUserConfig reads the user configuration file and sets UserCfg
 func ReadUserConfig(file string) {
 	UserCfg = ReadConfig(file)
 }
 
+// DecryptUserConfig decrypts the user config if it is
+// encrypted. After this call, Data and Configuration members of the
+// configuration are set, and EData and ECfg are set to empty
 func DecryptUserConfig() {
 	if len(UserCfg.AuthKey) > 0 {
 		cli, err := ConnectEncServer()
@@ -160,7 +179,7 @@ func DecryptUserConfig() {
 			AskPasswordStartDecrypt(DefaultEncTimeout)
 			cli, err = ConnectEncServer()
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
 			}
 		}
 		m := make(map[string]Remote)
@@ -171,6 +190,7 @@ func DecryptUserConfig() {
 	}
 }
 
+// WriteUserConfig writes the user config file
 func WriteUserConfig(cfgFile string) error {
 	cfg := UserCfg
 	if len(UserCfg.AuthKey) > 0 {
@@ -184,7 +204,7 @@ func WriteUserConfig(cfgFile string) error {
 	return WriteConfig(cfgFile, cfg)
 }
 
-// Write configuration to the file
+// WriteConfig writes configuration to the file
 func WriteConfig(cfgFile string, cfg Configuration) error {
 	f, e := os.Create(cfgFile)
 	if e != nil {
@@ -196,16 +216,16 @@ func WriteConfig(cfgFile string, cfg Configuration) error {
 	return enc.Encode(cfg)
 }
 
-// Decodes a map[] into a structure
+// Decode a map[] into a structure
 func Decode(in, out interface{}) {
 	d, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{Result: out})
 	err := d.Decode(in)
 	if err != nil {
-		panic(fmt.Sprintf("Error decoding configuration: %s", err))
+		log.Fatal(fmt.Sprintf("Error decoding configuration: %s", err))
 	}
 }
 
-// Converts map[interface{}]interface{} into map[string]interface{}
+// ConvertMap converts map[interface{}]interface{} into map[string]interface{}
 func ConvertMap(in interface{}) interface{} {
 	if in == nil {
 		return nil
@@ -233,6 +253,7 @@ func ConvertMap(in interface{}) interface{} {
 	return in
 }
 
+// ConnectEncServer attempts to connect the decryption agent
 func ConnectEncServer() (*rpc.RequestProcessorClient, error) {
 	socketName, e := homedir.Expand("~/.took.s")
 	if e != nil {
@@ -246,18 +267,21 @@ func ConnectEncServer() (*rpc.RequestProcessorClient, error) {
 	return cli, nil
 }
 
+// MustConnectEncServer connects to decryption agent and exists if fails
 func MustConnectEncServer() *rpc.RequestProcessorClient {
 	cli, err := ConnectEncServer()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	return cli
 }
 
+// InsecureAllowed returns true if program path has -insecure in it.
 func InsecureAllowed() bool {
 	return strings.Contains(os.Args[0], "-insecure")
 }
 
+// ValidateInsecureURL validates that a URL is https, or insecure URLs are allowd
 func ValidateInsecureURL(url string) {
 	if strings.HasPrefix(strings.ToLower(url), "http://") {
 		if !InsecureAllowed() {
@@ -276,7 +300,7 @@ func AskPasswordStartDecrypt(timeout time.Duration) {
 func StartDecrypt(password string, timeout time.Duration) {
 	_, err := crypta.NewServer(password, UserCfg.AuthKey)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	cmd := exec.Command(os.Args[0], "decrypt", "x", "-t", timeout.String())
 	wr, _ := cmd.StdinPipe()
@@ -290,5 +314,5 @@ func StartDecrypt(password string, timeout time.Duration) {
 			return
 		}
 	}
-	panic("Cannot run decrypt server")
+	log.Fatal("Cannot run decrypt server")
 }

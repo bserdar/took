@@ -16,7 +16,7 @@ func (p *Protocol) Validate(accessToken string, serverData ServerData) bool {
 	cli := proto.GetHTTPClient()
 	req, _ := http.NewRequest(http.MethodPost, serverData.IntrospectionEndpoint,
 		strings.NewReader(fmt.Sprintf("token=%s", accessToken)))
-	req.SetBasicAuth(p.Cfg.ClientId, p.Cfg.ClientSecret)
+	req.SetBasicAuth(p.Cfg.ClientID, p.Cfg.ClientSecret)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	log.Debugf("Sending introspection request to %s", serverData.IntrospectionEndpoint)
 	response, err := cli.Do(req)

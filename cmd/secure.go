@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -61,25 +62,25 @@ There is no way to rever this operation. Do you want to continue(y/N)?`)
 		}
 		srv, err := crypta.InitServer(pwd)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		rp := crypta.NewRequestProcessor(srv, nil)
 
 		cfg.UserCfg.AuthKey, err = srv.GetAuthKey()
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 
 		enc := func(in interface{}) string {
 			in = cfg.ConvertMap(in)
 			doc, err := json.Marshal(in)
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
 			}
 			var rsp crypta.DataResponse
 			err = rp.Encrypt(crypta.DataRequest{Data: string(doc)}, &rsp)
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
 			}
 			fmt.Printf("Enc: In: %s out: %s\n", doc, rsp.Data)
 			return rsp.Data
@@ -116,19 +117,19 @@ var decryptCmd = &cobra.Command{
 			reader := bufio.NewReader(os.Stdin)
 			s, e := reader.ReadString('\n')
 			if e != nil {
-				panic(e)
+				log.Fatal(e)
 			}
 			if s[len(s)-1] == '\n' {
 				s = s[:len(s)-1]
 			}
 			socketName, e := homedir.Expand("~/.took.s")
 			if e != nil {
-				panic(e)
+				log.Fatal(e)
 			}
 			os.Remove(socketName)
-			e = rpc.RPCServer(socketName, s, cfg.UserCfg.AuthKey, decryptDur)
+			e = rpc.Server(socketName, s, cfg.UserCfg.AuthKey, decryptDur)
 			if e != nil {
-				panic(e)
+				log.Fatal(e)
 			}
 		} else {
 			cfg.AskPasswordStartDecrypt(decryptDur)

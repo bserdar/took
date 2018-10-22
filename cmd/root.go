@@ -79,6 +79,7 @@ func initConfig() {
 	}
 }
 
+// WriteUserConfig writes using config file
 func WriteUserConfig() {
 	err := cfg.WriteUserConfig(getConfigFile())
 	if err != nil {

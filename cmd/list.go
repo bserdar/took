@@ -9,11 +9,11 @@ import (
 )
 
 func init() {
-	RootCmd.AddCommand(RemotesCmd)
-	RootCmd.AddCommand(ProfilesCmd)
+	RootCmd.AddCommand(remotesCmd)
+	RootCmd.AddCommand(profilesCmd)
 }
 
-var RemotesCmd = &cobra.Command{
+var remotesCmd = &cobra.Command{
 	Use:   "cfg",
 	Short: "List authentication configurations",
 	Long:  `List authentication configurations`,
@@ -28,7 +28,7 @@ var RemotesCmd = &cobra.Command{
 		}
 	}}
 
-var ProfilesCmd = &cobra.Command{
+var profilesCmd = &cobra.Command{
 	Use:   "profiles",
 	Short: "List server profiles",
 	Long:  `List server profiles`,
