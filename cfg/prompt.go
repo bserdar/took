@@ -10,8 +10,11 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-// Ask asks something to the user and returns it. Panics on error
-func Ask(prompt string) string {
+var Ask = DefaultAsk
+var AskPasswordWithPrompt = DefaultAskPasswordWithPrompt
+
+// DefaultAsk asks something to the user and returns it. Panics on error
+func DefaultAsk(prompt string) string {
 	fmt.Print(prompt)
 	reader := bufio.NewReader(os.Stdin)
 	s, e := reader.ReadString('\n')
@@ -34,8 +37,8 @@ func AskPassword() string {
 	return AskPasswordWithPrompt("Password: ")
 }
 
-// AskPasswordWithPrompt prompts, and asks password
-func AskPasswordWithPrompt(prompt string) string {
+// DefaultAskPasswordWithPrompt prompts, and asks password
+func DefaultAskPasswordWithPrompt(prompt string) string {
 	fmt.Print(prompt)
 	bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {

@@ -96,7 +96,7 @@ func itrForms(formID string, requiredFields []string, node *html.Node) (string, 
 		if len(formID) == 0 || findAttr("id", node) == formID {
 			// Find the first form with these fields
 			action := findAttr("action", node)
-			fields := getFields(node)
+			fields := getFields(node.FirstChild)
 			if len(formID) > 0 || containsAll(fields, requiredFields) {
 				return action, fields
 			}
@@ -187,9 +187,11 @@ func FormAuth(cfg HTMLFormConfig, authURL string, userName, password string) *ur
 				redirectedURL = req.URL
 				return errors.New("Redirect")
 			}
-			response, _ := cli.Do(request)
-			log.Debugf("Response: %+v", response)
-			defer response.Body.Close()
+			response, err := cli.Do(request)
+			log.Debugf("Response: %+v %v", response, err)
+			if err == nil {
+				defer response.Body.Close()
+			}
 		}
 	} else {
 		log.Debugf("err:%s", err)
