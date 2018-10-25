@@ -36,11 +36,18 @@ lint:
 
 build: fmt vet lint 
 	@echo "+ $@"
-	@go build 
+	@go build
+
+dist: build test
+	{ \
+	tag=`git tag -l --points-at HEAD`; \
+	if [ ! -z $$tag ] ; then tag="-$$tag";	fi; \
+	tar cfz took$$tag.tar.gz took readme.md LICENSE ;\
+	}
 
 test:
 	@echo "+ $@"
-	go test  $(PKGS) 
+	go test  $(PKGS) -coverprofile=cover
 
 clean:
 	@echo "+ $@"
