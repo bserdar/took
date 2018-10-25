@@ -201,8 +201,8 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 			}
 		}
 		if redirectedURL == nil {
-			fmt.Printf("Go to this URL to authenticate %s: %s\n", userName, authURL)
-			inURL := cfg.Ask("After authentication, copy/paste the URL here:")
+			inURL := cfg.Ask(fmt.Sprintf(`Go to this URL to authenticate %s: %s
+After authentication, copy/paste the URL here:`, userName, authURL))
 			redirectedURL, err = url.Parse(inURL)
 			if err != nil {
 				log.Fatal(err.Error())
