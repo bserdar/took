@@ -171,7 +171,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	stateBytes := make([]byte, stateRandomLength)
 	_, err = rand.Read(stateBytes)
 	if err != nil {
-		log.Fatal(err.Error())
+		return "", nil, err
 	}
 	state := base64.URLEncoding.EncodeToString(stateBytes)
 
@@ -189,7 +189,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 		}
 		token, err = conf.PasswordCredentialsToken(ctx, userName, password)
 		if err != nil {
-			log.Fatal(err)
+			return "", nil, err
 		}
 	} else {
 		authURL := conf.AuthCodeURL(state, oauth2.AccessTypeOnline)
@@ -205,15 +205,15 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 After authentication, copy/paste the URL here:`, userName, authURL))
 			redirectedURL, err = url.Parse(inURL)
 			if err != nil {
-				log.Fatal(err.Error())
+				return "", nil, err
 			}
 			if state != redirectedURL.Query().Get("state") {
-				log.Fatal("Invalid state")
+				return "", nil, fmt.Errorf("Invalid state")
 			}
 		}
 		token, err = conf.Exchange(ctx, redirectedURL.Query().Get("code"))
 		if err != nil {
-			log.Fatal(err)
+			return "", nil, err
 		}
 	}
 

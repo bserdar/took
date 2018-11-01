@@ -10,7 +10,10 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+// Ask prompts a string, asks, and returns what user entered
 var Ask = DefaultAsk
+
+// AskPasswordWithPrompt prints a prompt and gets password
 var AskPasswordWithPrompt = DefaultAskPasswordWithPrompt
 
 // DefaultAsk asks something to the user and returns it. Panics on error

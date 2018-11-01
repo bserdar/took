@@ -42,7 +42,7 @@ dist: build test
 	{ \
 	tag=`git tag -l --points-at HEAD`; \
 	if [ ! -z $$tag ] ; then tag="-$$tag";	fi; \
-	tar cfz took$$tag.tar.gz took readme.md LICENSE ;\
+	tar cfz took$$tag-linux-x86_64.tar.gz took readme.md LICENSE ;\
 	}
 
 test:

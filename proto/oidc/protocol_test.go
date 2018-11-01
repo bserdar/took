@@ -108,6 +108,47 @@ func TestGetToken(t *testing.T) {
 		t.Errorf("Wrong token: %s", ret)
 	}
 }
+func TestCantGetToken(t *testing.T) {
+	handler := testProtocolHandler{response: make(map[string]testReturn)}
+	server := httptest.NewServer(&handler)
+	defer server.Close()
+
+	p := Protocol{}
+	p.Cfg = Config{ServerProfile: ServerProfile{URL: server.URL},
+		ClientID:     "id",
+		ClientSecret: "secret",
+		CallbackURL:  "http://callback"}
+
+	// This will be called with "Go to this url..."
+	cfg.Ask = func(s string) string {
+		// Get the http:// part
+		ix := strings.Index(s, "http://")
+		if ix == -1 {
+			t.Errorf("Cannot find url in prompt")
+			return ""
+		}
+		lf := strings.IndexRune(s, '\n')
+		u, err := url.Parse(s[ix:lf])
+		if err != nil {
+			t.Errorf("Cannot parse url %s: %v", s[ix:lf], err)
+			return ""
+		}
+
+		ret := fmt.Sprintf("http://callback?code=%s&state=%s", u.Query().Get("code"), u.Query().Get("state"))
+		fmt.Printf("redirect: %s\n", ret)
+		return ret
+	}
+
+	handler.response["/.well-known/openid-configuration"] =
+		testReturn{returnCode: 200, returnBody: fmt.Sprintf(`{"authorization_endpoint":"%s/auth","token_endpoint":"%s/token","token_introspection_endpoint":"%s/verify"}`, server.URL, server.URL, server.URL)}
+
+	handler.response["/token"] = testReturn{returnCode: 401, headers: map[string]string{"Content-Type": "application/json"}}
+
+	_, _, err := p.GetToken(proto.TokenRequest{Username: "user"})
+	if err == nil {
+		t.Errorf("Expected error")
+	}
+}
 
 func TestRefreshNeeded(t *testing.T) {
 	handler := testProtocolHandler{response: make(map[string]testReturn)}
