@@ -50,6 +50,10 @@ var oidcConnectWizard = []proto.SetupStep{
 	}}}
 
 func init() {
+	oidcConnectCmd.SetUsageFunc(func(c *cobra.Command) error {
+		c.OutOrStderr().Write([]byte(`required flags are "callback-url", "clientId", "name", "secret", and one of "server" or "url"`))
+		return nil
+	})
 	cmd.AddCmd.AddCommand(oidcConnectCmd)
 	cmd.ModCmd.AddCommand(oidcConnectUpdateCmd)
 
@@ -67,7 +71,7 @@ func init() {
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
 		cmd.Flags().StringVarP(&oidcCfg.scopes, "scopes", "o", "", "Additional scopes to request from server (-o scope1,scope2,scope3)")
-		cmd.Flags().BoolP("pwd", "p", false, "Password grant")
+		cmd.Flags().BoolP("pwd", "p", false, "Password grant (true/false)")
 		if cfg.InsecureAllowed() {
 			cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
 		}

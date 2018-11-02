@@ -30,8 +30,10 @@ func init() {
 
 // TokenCmd is the took token command
 var TokenCmd = &cobra.Command{
-	Use:   "token",
-	Short: "Get token <config name> [username] [password]",
+	Use: `token [flags] config [username]
+
+Get a token for the configuration "config" for "username".`,
+	Short: "Get a token",
 	Long:  `Get a token for a config, renew if necessary`,
 	Args:  cobra.RangeArgs(1, 3),
 	Run: func(cmd *cobra.Command, args []string) {
