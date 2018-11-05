@@ -82,7 +82,6 @@ There is no way to rever this operation. Do you want to continue(y/N)?`)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Enc: In: %s out: %s\n", doc, rsp.Data)
 			return rsp.Data
 		}
 
