@@ -51,7 +51,7 @@ var encryptCmd = &cobra.Command{
 			return
 		}
 		ans := cfg.Ask(`This operation will encrypt the user configuration file using a password.
-There is no way to rever this operation. Do you want to continue(y/N)?`)
+There is no way to revert this operation. Do you want to continue(y/N)?`)
 		if ans != "y" {
 			return
 		}

@@ -51,6 +51,12 @@ func getConfigFile() string {
 	return cfgFile
 }
 
+type simpleFormatter struct{}
+
+func (s simpleFormatter) Format(entry *log.Entry) ([]byte, error) {
+	return []byte(entry.Message), nil
+}
+
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	first := false
@@ -70,6 +76,7 @@ func initConfig() {
 	} else {
 		log.SetLevel(log.ErrorLevel)
 	}
+	log.SetFormatter(simpleFormatter{})
 	if first {
 		firstRun()
 	}

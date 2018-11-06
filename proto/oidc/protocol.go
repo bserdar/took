@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	jwt "gopkg.in/square/go-jose.v2/jwt"
 
 	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/proto"
@@ -144,8 +146,12 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 			log.Debugf("There is an access token, validating")
 			if p.Validate(tok.AccessToken, serverData) {
 				log.Debug("Token is valid")
-				if request.Refresh != proto.UseRefresh {
-					return tok.FormatToken(request.Out), p.Tokens, nil
+				// Token may be valid, but too close to expiration
+				if !p.TooClose(tok.AccessToken, serverData) {
+					log.Debug("But expiration is too close")
+					if request.Refresh != proto.UseRefresh {
+						return tok.FormatToken(request.Out), p.Tokens, nil
+					}
 				}
 			}
 			if tok.RefreshToken != "" {
@@ -263,4 +269,20 @@ func combine(base, suffix string) string {
 		base = base + "/"
 	}
 	return base + suffix
+}
+
+// TooClose returns true if the token expiration is too close: 1m if
+// token lifetime is more than 1m, or token lifetime if not
+func (p *Protocol) TooClose(accessToken string, serverData ServerData) bool {
+	t, err := jwt.ParseSigned(accessToken)
+	if err == nil {
+		var c jwt.Claims
+		t.UnsafeClaimsWithoutVerification(&c)
+		return tooClose(c.Expiry.Time(), time.Now())
+	}
+	return false
+}
+
+func tooClose(expiry, now time.Time) bool {
+	return expiry.Sub(now) < 30*time.Second
 }

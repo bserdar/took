@@ -13,5 +13,6 @@ require (
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f // indirect
 	golang.org/x/sys v0.0.0-20181031143558-9b800f95dbbc // indirect
 	google.golang.org/appengine v1.3.0 // indirect
+	gopkg.in/square/go-jose.v2 v2.1.9
 	gopkg.in/yaml.v2 v2.2.1
 )

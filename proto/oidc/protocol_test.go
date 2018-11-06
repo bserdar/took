@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bserdar/took/cfg"
 	"github.com/bserdar/took/proto"
@@ -196,4 +197,22 @@ func TestRefreshNeeded(t *testing.T) {
 	if ret != "a" {
 		t.Errorf("Wrong token: %s", ret)
 	}
+}
+
+func TestTooClose(t *testing.T) {
+	// Expired already
+	if !tooClose(time.Date(2000, time.November, 2, 1, 2, 3, 0, time.UTC),
+		time.Date(2000, time.November, 2, 1, 2, 4, 0, time.UTC)) {
+		t.Errorf("It was expired")
+	}
+	if !tooClose(time.Date(2000, time.November, 2, 1, 2, 3, 0, time.UTC),
+		time.Date(2000, time.November, 2, 1, 2, 2, 0, time.UTC)) {
+		t.Errorf("It was too close")
+	}
+
+	if tooClose(time.Date(2000, time.November, 2, 1, 2, 3, 0, time.UTC),
+		time.Date(2000, time.November, 2, 1, 1, 0, 0, time.UTC)) {
+		t.Errorf("It was not too close")
+	}
+
 }
