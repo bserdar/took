@@ -16,32 +16,43 @@ func init() {
 }
 
 var setupCmd = &cobra.Command{
-	Use:   "setup",
+	Use:   "setup [profile]",
 	Short: "Setup a new authentication configuration based on a server profile",
 	Long: `Setup a new authentication configuration based on a server profile.
 
 `,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg.DecryptUserConfig()
 		var serverProfileName string
+		profileArg := ""
+		if len(args) > 0 {
+			profileArg = args[0]
+		}
 	askProfile:
-		if len(cfg.CommonCfg.ServerProfiles)+len(cfg.UserCfg.ServerProfiles) > 0 {
-			buf := bytes.Buffer{}
-			buf.WriteString("These are the known server profiles:\n")
-			for k, v := range cfg.CommonCfg.ServerProfiles {
-				buf.WriteString(fmt.Sprintf("%s (%s)\n", k, v.Type))
+		if len(profileArg) == 0 {
+			if len(cfg.CommonCfg.ServerProfiles)+len(cfg.UserCfg.ServerProfiles) > 0 {
+				buf := bytes.Buffer{}
+				buf.WriteString("These are the known server profiles:\n")
+				for k, v := range cfg.CommonCfg.ServerProfiles {
+					buf.WriteString(fmt.Sprintf("%s (%s)\n", k, v.Type))
+				}
+				for k, v := range cfg.UserCfg.ServerProfiles {
+					buf.WriteString(fmt.Sprintf("%s (%s)\n", k, v.Type))
+				}
+				buf.WriteString("Enter the server profile for which you want to add a new authentication configuration:")
+				serverProfileName = cfg.Ask(buf.String())
+			} else {
+				log.Fatalf("There are no known server profiles")
 			}
-			for k, v := range cfg.UserCfg.ServerProfiles {
-				buf.WriteString(fmt.Sprintf("%s (%s)\n", k, v.Type))
-			}
-			buf.WriteString("Enter the server profile for which you want to add a new authentication configuration:")
-			serverProfileName = cfg.Ask(buf.String())
 		} else {
-			log.Fatalf("There are no known server profiles")
+			serverProfileName = profileArg
 		}
 
 		serverProfile := cfg.GetServerProfile(serverProfileName)
 		if len(serverProfile.Type) == 0 {
+			fmt.Printf("%s not found\n", serverProfileName)
+			profileArg = ""
 			goto askProfile
 		}
 

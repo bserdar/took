@@ -54,7 +54,7 @@ func getConfigFile() string {
 type simpleFormatter struct{}
 
 func (s simpleFormatter) Format(entry *log.Entry) ([]byte, error) {
-	return []byte(entry.Message), nil
+	return append([]byte(entry.Message), '\n'), nil
 }
 
 // initConfig reads in config file and ENV variables if set.

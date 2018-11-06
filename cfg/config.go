@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,6 +12,7 @@ import (
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/mapstructure"
+	log "github.com/sirupsen/logrus"
 	yml "gopkg.in/yaml.v2"
 
 	"github.com/bserdar/took/crypta"
@@ -176,6 +176,7 @@ func DecryptUserConfig() {
 	if len(UserCfg.AuthKey) > 0 {
 		cli, err := ConnectEncServer()
 		if err != nil {
+			log.Debugf("Cannot connect took agent: %s", err.Error())
 			AskPasswordStartDecrypt(DefaultEncTimeout)
 			cli, err = ConnectEncServer()
 			if err != nil {
@@ -261,6 +262,7 @@ func ConnectEncServer() (*rpc.RequestProcessorClient, error) {
 	}
 	cli, err := rpc.NewRequestProcessorClient("unix", socketName)
 	if err != nil {
+		log.Debugf("Cannot connect to server: %s", err.Error())
 		return nil, errors.New("You need to use took decrypt to decrypt the tokens")
 	}
 
