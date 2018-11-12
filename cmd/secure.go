@@ -103,8 +103,8 @@ There is no way to revert this operation. Do you want to continue(y/N)?`)
 
 var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
-	Short: "Decrypt the configuration file",
-	Long: `Enter the password to decrypt the configuration file.
+	Short: "Enter the password to unlock a decrypted configuration file",
+	Long: `Enter the password to unlock the configuration file so subsequent commands can be used without entering a password.
 `,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
