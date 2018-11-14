@@ -42,7 +42,7 @@ var oidcConnectWizard = []proto.SetupStep{
 		oidcCfg.Cfg.CallbackURL = in
 		return nil
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).CallbackURL }},
-	{Prompt: "OIDC flow (auth - authorization code flow, pwd - password grant flow, leave empty to use server profile default:",
+	{Prompt: "OIDC flow (auth - authorization code flow, pwd - password grant flow, leave empty to use server profile default):",
 		Parse: func(in string) error {
 			if in == "pwd" || in == "auth" || in == "" {
 				oidcCfg.flow = in
