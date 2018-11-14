@@ -18,6 +18,7 @@ type oidcConnect struct {
 	Cfg    Config
 	form   string
 	scopes string
+	flow   string
 }
 
 var oidcCfg oidcConnect
@@ -41,13 +42,15 @@ var oidcConnectWizard = []proto.SetupStep{
 		oidcCfg.Cfg.CallbackURL = in
 		return nil
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).CallbackURL }},
-	{Prompt: "Password grant (y/n):", Parse: func(in string) error {
-		if in == "y" || in == "Y" {
-			t := true
-			oidcCfg.Cfg.PasswordGrant = &t
-		}
-		return nil
-	}}}
+	{Prompt: "OIDC flow (auth - authorization code flow, pwd - password grant flow, leave empty to use server profile default:",
+		Parse: func(in string) error {
+			if in == "pwd" || in == "auth" || in == "" {
+				oidcCfg.flow = in
+			} else {
+				return fmt.Errorf("Invalid entry %s, enter auth, pwd,or leave empty", in)
+			}
+			return nil
+		}}}
 
 func init() {
 	oidcConnectCmd.SetUsageFunc(func(c *cobra.Command) error {
@@ -71,7 +74,7 @@ func init() {
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
 		cmd.Flags().StringVarP(&oidcCfg.scopes, "scopes", "o", "", "Additional scopes to request from server (-o scope1,scope2,scope3)")
-		cmd.Flags().BoolP("pwd", "p", false, "Use password grant flow")
+		cmd.Flags().StringVarP(&oidcCfg.flow, "flow", "f", "auth", "Use authorization code flow (auth) or password grant flow (pwd)")
 		if cfg.InsecureAllowed() {
 			cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
 		}
@@ -160,10 +163,14 @@ func parseOidc(c *cobra.Command) {
 			}
 		}
 	}
-	pwdFlag := c.Flags().Lookup("pwd")
-	if pwdFlag.Changed {
-		x, _ := c.Flags().GetBool("pwd")
+	if oidcCfg.flow == "auth" {
+		x := false
 		oidcCfg.Cfg.PasswordGrant = &x
+	} else if oidcCfg.flow == "pwd" {
+		x := true
+		oidcCfg.Cfg.PasswordGrant = &x
+	} else if oidcCfg.flow != "" {
+		log.Fatalf("Invalid flow: %s Use 'auth' or 'pwd'", oidcCfg.flow)
 	}
 
 	var formCfg HTMLFormConfig
