@@ -53,10 +53,10 @@ var oidcConnectWizard = []proto.SetupStep{
 		}}}
 
 func init() {
-	oidcConnectCmd.SetUsageFunc(func(c *cobra.Command) error {
-		c.OutOrStderr().Write([]byte(`required flags are "callback-url", "clientId", "name", "secret", and one of "server" or "url"`))
-		return nil
-	})
+	//	oidcConnectCmd.SetUsageFunc(func(c *cobra.Command) error {
+	//		c.OutOrStderr().Write([]byte(`required flags are "callback-url", "clientId", "name", "secret", and one of "server" or "url"`))
+	//		return nil
+	//	})
 	cmd.AddCmd.AddCommand(oidcConnectCmd)
 	cmd.ModCmd.AddCommand(oidcConnectUpdateCmd)
 
