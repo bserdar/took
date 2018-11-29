@@ -46,7 +46,12 @@ dist: build-prod test
 	{ \
 	tag=`git tag -l --points-at HEAD`; \
 	if [ ! -z $$tag ] ; then tag="-$$tag";	fi; \
-	tar cfz took$$tag-linux-x86_64.tar.gz took readme.md LICENSE ;\
+	mkdir lin ; GOOS=linux GOARCH=amd64 go build -o lin/took -ldflags "-s -w"; \
+	tar cfz took$$tag-linux-x86_64.tar.gz  readme.md LICENSE -C lin took ;\
+	mkdir win ; GOOS=windows GOARCH=amd64 go build -o win/took -ldflags "-s -w" ;\
+	tar cfz took$$tag-windows-x86_64.tar.gz readme.md LICENSE -C win took ;\
+	mkdir darwin ; GOOS=darwin GOARCH=amd64 go build -o darwin/took -ldflags "-s -w" ;\
+	tar cfz took$$tag-darwin-x86_64.tar.gz readme.md LICENSE -C darwin took ;\
 	}
 
 test:
