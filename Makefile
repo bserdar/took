@@ -8,8 +8,20 @@ all:  fmt vet lint build test
 # Package list
 PKGS=$(shell go list  ./...| grep -v /vendor/)
 
+# Either define VER env variable, or use version detection using head hash
+VER?=${version}
+
 # Resolving binary dependencies for specific targets
 GOLINT=$(shell which golint || echo '')
+ver:
+	{ \
+	ver=${VER}; \
+	if [ -z $$ver ]; then ver=`sh getver.sh`; fi; \
+	echo "package cmd" >cmd/version.go; \
+	echo "// Version constant" >>cmd/version.go; \
+	echo "const Version = \"$$ver\"" >>cmd/version.go;\
+	gofmt -s -w cmd/version.go;\
+	}
 
 vet:
 	@echo "+ $@"
@@ -34,24 +46,23 @@ lint:
 	-$(GOLINT) crypta/...
 	-$(GOLINT) proto/...
 
-build: fmt vet lint
+build: ver fmt vet lint
 	@echo "+ $@"
 	@go build
 
-build-prod: fmt vet lint
+build-prod: ver fmt vet lint
 	@echo "+ $@"
 	@go build -ldflags "-s -w"
 
 dist: build-prod test
 	{ \
-	tag=`git tag -l --points-at HEAD`; \
-	if [ ! -z $$tag ] ; then tag="-$$tag";	fi; \
+	tag=`sh getver.sh`
 	mkdir lin ; GOOS=linux GOARCH=amd64 go build -o lin/took -ldflags "-s -w"; \
-	tar cfz took$$tag-linux-x86_64.tar.gz  readme.md LICENSE -C lin took ;\
+	tar cfz took-$$tag-linux-x86_64.tar.gz  readme.md LICENSE -C lin took ;\
 	mkdir win ; GOOS=windows GOARCH=amd64 go build -o win/took -ldflags "-s -w" ;\
-	tar cfz took$$tag-windows-x86_64.tar.gz readme.md LICENSE -C win took ;\
+	tar cfz took-$$tag-windows-x86_64.tar.gz readme.md LICENSE -C win took ;\
 	mkdir darwin ; GOOS=darwin GOARCH=amd64 go build -o darwin/took -ldflags "-s -w" ;\
-	tar cfz took$$tag-darwin-x86_64.tar.gz readme.md LICENSE -C darwin took ;\
+	tar cfz took-$$tag-darwin-x86_64.tar.gz readme.md LICENSE -C darwin took ;\
 	}
 
 test:
