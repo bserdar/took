@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -57,7 +58,7 @@ var setupCmd = &cobra.Command{
 		}
 
 	askName:
-		cfgName := cfg.Ask("Enter name of the new authentication configuration:")
+		cfgName := strings.TrimSpace(cfg.Ask("Enter name of the new authentication configuration:"))
 		if _, ok := cfg.UserCfg.Remotes[cfgName]; ok {
 			fmt.Printf("%s already exists\n", cfgName)
 			goto askName

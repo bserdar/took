@@ -25,6 +25,7 @@ var oidcCfg oidcConnect
 
 var oidcConnectWizard = []proto.SetupStep{
 	{Prompt: "Client ID:", Parse: func(in string) error {
+		in = strings.TrimSpace(in)
 		if len(in) == 0 {
 			return fmt.Errorf("Client id is required")
 		}
@@ -32,6 +33,7 @@ var oidcConnectWizard = []proto.SetupStep{
 		return nil
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientID }},
 	{Prompt: "Client secret:", Parse: func(in string) error {
+		in = strings.TrimSpace(in)
 		if len(in) == 0 {
 			return fmt.Errorf("Client secret is required")
 		}
@@ -39,11 +41,13 @@ var oidcConnectWizard = []proto.SetupStep{
 		return nil
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientSecret }},
 	{Prompt: "Callback URL:", Parse: func(in string) error {
+		in = strings.TrimSpace(in)
 		oidcCfg.Cfg.CallbackURL = in
 		return nil
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).CallbackURL }},
 	{Prompt: "OIDC flow (auth - authorization code flow, pwd - password grant flow, leave empty to use server profile default):",
 		Parse: func(in string) error {
+			in = strings.TrimSpace(in)
 			if in == "pwd" || in == "auth" || in == "" {
 				oidcCfg.flow = in
 			} else {
