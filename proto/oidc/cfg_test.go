@@ -29,7 +29,7 @@ func TestMerge(t *testing.T) {
 	if x.URL != p.URL ||
 		!x.Insecure ||
 		!*x.PasswordGrant ||
-		x.TokenAPI != x.TokenAPI {
+		x.TokenAPI != "token" {
 		t.Errorf("Got %+v", x)
 	}
 }
