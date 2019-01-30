@@ -44,6 +44,7 @@ var encryptCmd = &cobra.Command{
 	Long: `Set a password to encrypt the user configuration file.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		InitConfig()
 		if len(cfg.UserCfg.AuthKey) > 0 {
 			if !firstRunRan {
 				fmt.Printf("Configuration file is already encrypted\n")
@@ -108,6 +109,7 @@ var decryptCmd = &cobra.Command{
 `,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
+		InitConfig()
 		if len(cfg.UserCfg.AuthKey) == 0 {
 			fmt.Printf("Configuration file is not encrypted\n")
 			return

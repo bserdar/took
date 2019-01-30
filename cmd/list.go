@@ -18,6 +18,7 @@ var remotesCmd = &cobra.Command{
 	Short: "List authentication configurations",
 	Long:  `List authentication configurations`,
 	Run: func(cmd *cobra.Command, args []string) {
+		InitConfig()
 		for k, v := range cfg.UserCfg.Remotes {
 			fmt.Printf("%s (%s)\n", k, v.Type)
 		}
@@ -33,6 +34,7 @@ var profilesCmd = &cobra.Command{
 	Short: "List server profiles",
 	Long:  `List server profiles`,
 	Run: func(cmd *cobra.Command, args []string) {
+		InitConfig()
 		for k, v := range cfg.UserCfg.ServerProfiles {
 			fmt.Printf("%s (%s)\n", k, v.Type)
 		}

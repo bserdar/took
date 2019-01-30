@@ -23,6 +23,7 @@ var DeleteCmd = &cobra.Command{
 	Long:  `Delete an authentication configuration`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		InitConfig()
 		cfg.DecryptUserConfig()
 		_, ok := cfg.UserCfg.Remotes[args[0]]
 		if !ok {

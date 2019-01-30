@@ -29,8 +29,6 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
@@ -57,8 +55,8 @@ func (s simpleFormatter) Format(entry *log.Entry) ([]byte, error) {
 	return append([]byte(entry.Message), '\n'), nil
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
+// InitConfig reads in config file and ENV variables if set.
+func InitConfig() {
 	first := false
 	cfgf := getConfigFile()
 	_, err := os.Stat(cfgf)

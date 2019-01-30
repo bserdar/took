@@ -106,6 +106,7 @@ var oidcConnectUpdateCmd = &cobra.Command{
 	Short: "Update an oidc configuration",
 	Long:  `Update an oidc configuration`,
 	Run: func(c *cobra.Command, args []string) {
+		cmd.InitConfig()
 		cfg.DecryptUserConfig()
 		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; !ok {
 			log.Fatalf("Remote %s does not exist", oidcCfg.Name)
@@ -140,6 +141,7 @@ Or you can add configuration by defining the server URL and other server attribu
 
  `,
 	Run: func(c *cobra.Command, args []string) {
+		cmd.InitConfig()
 		cfg.DecryptUserConfig()
 		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; ok {
 			log.Fatalf("Remote %s already exists", oidcCfg.Name)

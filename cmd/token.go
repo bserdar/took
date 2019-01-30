@@ -37,6 +37,7 @@ Get a token for the configuration "config" for "username".`,
 	Long:  `Get a token for a config, renew if necessary`,
 	Args:  cobra.RangeArgs(1, 3),
 	Run: func(cmd *cobra.Command, args []string) {
+		InitConfig()
 		cfg.DecryptUserConfig()
 		userRemote, uok := cfg.UserCfg.Remotes[args[0]]
 		commonRemote, cok := cfg.CommonCfg.Remotes[args[0]]

@@ -56,13 +56,14 @@ build-prod: ver fmt vet lint
 
 dist: build-prod test
 	{ \
-	tag=`sh getver.sh`
+	ver=${VER}; \
+	if [ -z $$ver ]; then ver=`sh getver.sh`; fi; \
 	mkdir lin ; GOOS=linux GOARCH=amd64 go build -o lin/took -ldflags "-s -w"; \
-	tar cfz took-$$tag-linux-x86_64.tar.gz  readme.md LICENSE -C lin took ;\
+	tar cfz took-$$ver-linux-x86_64.tar.gz  readme.md LICENSE -C lin took ;\
 	mkdir win ; GOOS=windows GOARCH=amd64 go build -o win/took -ldflags "-s -w" ;\
-	tar cfz took-$$tag-windows-x86_64.tar.gz readme.md LICENSE -C win took ;\
+	tar cfz took-$$ver-windows-x86_64.tar.gz readme.md LICENSE -C win took ;\
 	mkdir darwin ; GOOS=darwin GOARCH=amd64 go build -o darwin/took -ldflags "-s -w" ;\
-	tar cfz took-$$tag-darwin-x86_64.tar.gz readme.md LICENSE -C darwin took ;\
+	tar cfz took-$$ver-darwin-x86_64.tar.gz readme.md LICENSE -C darwin took ;\
 	}
 
 test:
