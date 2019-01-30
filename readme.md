@@ -228,3 +228,33 @@ took add oidc -n myapi -s 123 -b http://callback -c abc -u https://myserver \
 When a new token is requested, took will ask for the username and password fields, submit the HTML
 form, and get the tokens.
 
+# Code Organization
+
+Took is designed as a generic front-end for multiple authentication protocols. Protocol implementations
+should be under proto/, and included in main.go. When included, protocol implementation registers its
+own command line handlers. Currently there is only OIDC.
+
+These are the directories:
+
+ * cmd/: Files under this package contain all the entry points for commands. There should be no
+   dependency from this package to protocol implementations under proto/.
+ * proto/: This package contains a protocol registry, and utility functions common to all protocols.
+   In particular, HTTP utilities in this package should be used for all HTTP calls, because they look
+   at the secure flag and turn off certificate validation
+ * proto/oidc: This is the OIDC implementation. When included, this implementation registers command line
+   commands, and registers itself to the registry. 
+   * cfg.go: Contains the ServerProfile struct, and the code to merge default configs to user configs
+   * cmd.go: Contains command line commands. The setup wizard is also here.
+   * htmlform.go: Contains the parsing code that reads a login web page,parses login fields, and asks those
+     fields in the command line.
+   * protocol.go: Contains the implementation of 'token' command
+   * refresh.go: Token refresh logic
+   * serverinfo.go: Contains the code to get auth server information (part of oidc spec)
+   * validate.go: Contains token validation code
+ * crypta/: This package deals with encrypting/decrypting the tokens file.
+   * crypta.go: Contains the encryption/decryption implementation.
+   * proto.go: Defines a simple rpc protocol 
+   * rpc/: This package contains an rpc server and rpc client
+   When took detects that the token file is encrypted, it asks for the user password, and starts
+   another instance of took with an RPC server listening to a domain socket under $HOME. This
+   RPC server contains all the ecnryption/decryption functions unlocked using the user's password.
