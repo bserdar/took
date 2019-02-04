@@ -9,7 +9,7 @@ import (
 )
 
 // Server serves the encryption service via the unix domain socket
-func Server(socketName, password, authKey string, idleTimeout time.Duration) error {
+func Server(socketName, password, authKey, name string, idleTimeout time.Duration) error {
 	server, err := crypta.NewServer(password, authKey)
 	if err != nil {
 		return err
@@ -20,7 +20,7 @@ func Server(socketName, password, authKey string, idleTimeout time.Duration) err
 			<-tmr.C
 		}
 		tmr.Reset(idleTimeout)
-	})
+	}, name)
 	rpc.Register(&processor)
 	listener, err := net.Listen("unix", socketName)
 	if err != nil {

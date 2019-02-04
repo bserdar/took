@@ -2,8 +2,10 @@ package oidc
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/bserdar/took/proto"
+	log "github.com/sirupsen/logrus"
 )
 
 // ServerData contains the OIDC server information
@@ -18,12 +20,17 @@ type ServerData struct {
 
 // GetServerData retrieves server data from the auth server
 func GetServerData(url string) (ServerData, error) {
-	resp, err := proto.HTTPGet(combine(url, ".well-known/openid-configuration"))
+	cfgUrl := combine(url, ".well-known/openid-configuration")
+	log.Debugf("Getting server info from %s", cfgUrl)
+	resp, err := proto.HTTPGet(cfgUrl)
 	if err != nil {
 		return ServerData{}, err
 	}
 	defer resp.Body.Close()
 	var d ServerData
 	err = json.NewDecoder(resp.Body).Decode(&d)
+	if err != nil {
+		err = fmt.Errorf("Cannot get SSO server information from %s: %s", cfgUrl, err.Error())
+	}
 	return d, err
 }

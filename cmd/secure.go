@@ -65,7 +65,7 @@ There is no way to revert this operation. Do you want to continue(y/N)?`)
 		if err != nil {
 			log.Fatal(err)
 		}
-		rp := crypta.NewRequestProcessor(srv, nil)
+		rp := crypta.NewRequestProcessor(srv, nil, cfg.UserCfgFile)
 
 		cfg.UserCfg.AuthKey, err = srv.GetAuthKey()
 		if err != nil {
@@ -128,11 +128,11 @@ var decryptCmd = &cobra.Command{
 				log.Fatal(e)
 			}
 			os.Remove(socketName)
-			e = rpc.Server(socketName, s, cfg.UserCfg.AuthKey, decryptDur)
+			e = rpc.Server(socketName, s, cfg.UserCfg.AuthKey, cfg.UserCfgFile, decryptDur)
 			if e != nil {
 				log.Fatal(e)
 			}
 		} else {
-			cfg.AskPasswordStartDecrypt(decryptDur)
+			cfg.AskPasswordStartDecrypt(decryptDur, cfg.UserCfgFile)
 		}
 	}}

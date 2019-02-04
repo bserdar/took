@@ -25,7 +25,7 @@ var setupCmd = &cobra.Command{
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		InitConfig()
-		cfg.DecryptUserConfig()
+		cfg.DecryptUserConfig(cfg.UserCfgFile)
 		var serverProfileName string
 		profileArg := ""
 		if len(args) > 0 {

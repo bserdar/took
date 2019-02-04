@@ -32,7 +32,7 @@ again:
 			log.Fatal(err)
 		}
 		WriteUserConfig()
-		cfg.StartDecrypt(pwd, 10*time.Minute)
+		cfg.StartDecrypt(pwd, 10*time.Minute, cfg.UserCfgFile)
 
 	} else if ans == "n" || ans == "N" {
 	} else {

@@ -10,11 +10,13 @@ import (
 // to encrypt/decrypt data
 type RequestProcessor struct {
 	srv  Server
+	Name string
 	ping func()
 }
 
 // InitRequest initializes the decryption server with the given password
 type InitRequest struct {
+	Name     string `json:"name"`
 	Password string `json:"pwd"`
 }
 
@@ -27,6 +29,7 @@ type InitResponse struct {
 type LoginRequest struct {
 	Password string `json:"pwd"`
 	AuthKey  string `json:"auth"`
+	Name     string `json:"name"`
 }
 
 // LoginResponse returns the result of login password validation
@@ -44,6 +47,15 @@ type DataResponse struct {
 	Data string `json:"data"`
 }
 
+// NameRequest requests the name of the server
+type NameRequest struct {
+}
+
+// NameResponse contains the name of the server
+type NameResponse struct {
+	Name string `json:"name"`
+}
+
 // PingRequest is ti check connection status and extend idle timeout
 type PingRequest struct{}
 
@@ -51,11 +63,11 @@ type PingRequest struct{}
 type PingResponse struct{}
 
 // NewRequestProcessor return a new RequestProcessor object using the given server
-func NewRequestProcessor(server Server, pingFunc func()) RequestProcessor {
+func NewRequestProcessor(server Server, pingFunc func(), name string) RequestProcessor {
 	if pingFunc == nil {
 		pingFunc = func() {}
 	}
-	return RequestProcessor{srv: server, ping: pingFunc}
+	return RequestProcessor{srv: server, ping: pingFunc, Name: name}
 }
 
 // Init initializes the processor with a password
@@ -73,6 +85,7 @@ func (s *RequestProcessor) Init(req InitRequest, response *InitResponse) error {
 	if err != nil {
 		return err
 	}
+	s.Name = req.Name
 	response.AuthKey = a
 	return nil
 }
@@ -85,6 +98,7 @@ func (s *RequestProcessor) Login(req LoginRequest, response *LoginResponse) erro
 		return err
 	}
 	s.srv = srv
+	s.Name = req.Name
 	response.Ok = true
 	return nil
 }
@@ -118,5 +132,11 @@ func (s *RequestProcessor) Decrypt(req DataRequest, response *DataResponse) erro
 // Ping calls the ping function
 func (s *RequestProcessor) Ping(req PingRequest, response *PingResponse) error {
 	s.ping()
+	return nil
+}
+
+// GetName returns the name of the server
+func (s *RequestProcessor) GetName(req NameRequest, response *NameResponse) error {
+	response.Name = s.Name
 	return nil
 }

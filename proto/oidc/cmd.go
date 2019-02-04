@@ -78,7 +78,7 @@ func init() {
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.TokenAPI, "token-api", "a", "", "Token API (defaults to protocol/openid-connect/token)")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.AuthAPI, "auth-api", "t", "", "Auth API (defaults to protocol/openid-connect/auth)")
 		cmd.Flags().StringVarP(&oidcCfg.scopes, "scopes", "o", "", "Additional scopes to request from server (-o scope1,scope2,scope3)")
-		cmd.Flags().StringVarP(&oidcCfg.flow, "flow", "f", "auth", "Use authorization code flow (auth) or password grant flow (pwd)")
+		cmd.Flags().StringVarP(&oidcCfg.flow, "flow", "f", "", "Use authorization code flow (auth) or password grant flow (pwd)")
 		if cfg.InsecureAllowed() {
 			cmd.Flags().BoolVarP(&oidcCfg.Cfg.Insecure, "insecure", "k", false, "Do not validate server certificates")
 		}
@@ -107,7 +107,7 @@ var oidcConnectUpdateCmd = &cobra.Command{
 	Long:  `Update an oidc configuration`,
 	Run: func(c *cobra.Command, args []string) {
 		cmd.InitConfig()
-		cfg.DecryptUserConfig()
+		cfg.DecryptUserConfig(cfg.UserCfgFile)
 		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; !ok {
 			log.Fatalf("Remote %s does not exist", oidcCfg.Name)
 		}
@@ -142,7 +142,7 @@ Or you can add configuration by defining the server URL and other server attribu
  `,
 	Run: func(c *cobra.Command, args []string) {
 		cmd.InitConfig()
-		cfg.DecryptUserConfig()
+		cfg.DecryptUserConfig(cfg.UserCfgFile)
 		if _, ok := cfg.UserCfg.Remotes[oidcCfg.Name]; ok {
 			log.Fatalf("Remote %s already exists", oidcCfg.Name)
 		}

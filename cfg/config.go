@@ -21,6 +21,7 @@ import (
 
 // UserCfg is the user's config
 var UserCfg Configuration
+var UserCfgFile string
 
 // CommonCfg is the common config from /etc/tool.yaml
 var CommonCfg Configuration
@@ -134,7 +135,7 @@ func decrypt(cli *rpc.RequestProcessorClient, in string) map[string]interface{} 
 func encrypt(cli *rpc.RequestProcessorClient, in interface{}) (string, *rpc.RequestProcessorClient) {
 	s, _ := json.Marshal(in)
 	if cli == nil {
-		cli = MustConnectEncServer()
+		cli = MustConnectEncServer(UserCfgFile)
 	}
 	ret, _ := cli.Encrypt(string(s))
 	return ret, cli
@@ -167,18 +168,19 @@ func encryptRemote(cli *rpc.RequestProcessorClient, in Remote) (Remote, *rpc.Req
 // ReadUserConfig reads the user configuration file and sets UserCfg
 func ReadUserConfig(file string) {
 	UserCfg = ReadConfig(file)
+	UserCfgFile = file
 }
 
 // DecryptUserConfig decrypts the user config if it is
 // encrypted. After this call, Data and Configuration members of the
 // configuration are set, and EData and ECfg are set to empty
-func DecryptUserConfig() {
+func DecryptUserConfig(file string) {
 	if len(UserCfg.AuthKey) > 0 {
-		cli, err := ConnectEncServer()
+		cli, err := ConnectEncServer(file)
 		if err != nil {
 			log.Debugf("Cannot connect took agent: %s", err.Error())
-			AskPasswordStartDecrypt(DefaultEncTimeout)
-			cli, err = ConnectEncServer()
+			AskPasswordStartDecrypt(DefaultEncTimeout, file)
+			cli, err = ConnectEncServer(file)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -255,12 +257,12 @@ func ConvertMap(in interface{}) interface{} {
 }
 
 // ConnectEncServer attempts to connect the decryption agent
-func ConnectEncServer() (*rpc.RequestProcessorClient, error) {
+func ConnectEncServer(name string) (*rpc.RequestProcessorClient, error) {
 	socketName, e := homedir.Expand("~/.took.s")
 	if e != nil {
 		return nil, e
 	}
-	cli, err := rpc.NewRequestProcessorClient("unix", socketName)
+	cli, err := rpc.NewRequestProcessorClient("unix", socketName, name)
 	if err != nil {
 		log.Debugf("Cannot connect to server: %s", err.Error())
 		return nil, errors.New("You need to use took decrypt to decrypt the tokens")
@@ -270,8 +272,8 @@ func ConnectEncServer() (*rpc.RequestProcessorClient, error) {
 }
 
 // MustConnectEncServer connects to decryption agent and exists if fails
-func MustConnectEncServer() *rpc.RequestProcessorClient {
-	cli, err := ConnectEncServer()
+func MustConnectEncServer(file string) *rpc.RequestProcessorClient {
+	cli, err := ConnectEncServer(file)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -294,24 +296,24 @@ func ValidateInsecureURL(url string) {
 }
 
 // AskPasswordStartDecrypt asks password and starts the decrypt server with the given timout
-func AskPasswordStartDecrypt(timeout time.Duration) {
-	StartDecrypt(AskPasswordWithPrompt("Configuration/Token encryption password: "), timeout)
+func AskPasswordStartDecrypt(timeout time.Duration, configFile string) {
+	StartDecrypt(AskPasswordWithPrompt("Configuration/Token encryption password: "), timeout, configFile)
 }
 
 //StartDecrypt starts another copy of took with decrypt x flag, and passes the password. Panics on fail
-func StartDecrypt(password string, timeout time.Duration) {
+func StartDecrypt(password string, timeout time.Duration, configFile string) {
 	_, err := crypta.NewServer(password, UserCfg.AuthKey)
 	if err != nil {
 		log.Fatal(err)
 	}
-	cmd := exec.Command(os.Args[0], "decrypt", "x", "-t", timeout.String())
+	cmd := exec.Command(os.Args[0], "decrypt", "x", "-t", timeout.String(), "--config", configFile)
 	wr, _ := cmd.StdinPipe()
 	cmd.Start()
 	wr.Write([]byte(password))
 	wr.Write([]byte("\n"))
 	for i := 0; i < 10; i++ {
 		time.Sleep(1 * time.Second)
-		_, err := ConnectEncServer()
+		_, err := ConnectEncServer(configFile)
 		if err == nil {
 			return
 		}

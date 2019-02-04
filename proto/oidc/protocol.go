@@ -116,7 +116,6 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	if config.Insecure {
 		proto.InsecureTLS = true
 	}
-
 	// If there is a username, use that. Otherwise, use last
 	userName := request.Username
 	if userName == "" {
@@ -140,7 +139,6 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	if err != nil {
 		return "", nil, err
 	}
-
 	if request.Refresh != proto.UseReAuth {
 		if tok.AccessToken != "" {
 			log.Debugf("There is an access token, validating")

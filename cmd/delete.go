@@ -24,14 +24,14 @@ var DeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		InitConfig()
-		cfg.DecryptUserConfig()
+		cfg.DecryptUserConfig(cfg.UserCfgFile)
 		_, ok := cfg.UserCfg.Remotes[args[0]]
 		if !ok {
 			log.Fatalf("%s not found", args[0])
 		}
 		if !forceDelete {
 			answer := cfg.Ask(fmt.Sprintf("Delete %s (y/N): ", args[0]))
-			if answer != "y" && answer != "N" {
+			if answer != "y" && answer != "Y" {
 				return
 			}
 		}

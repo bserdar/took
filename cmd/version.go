@@ -1,4 +1,4 @@
 package cmd
 
 // Version constant
-const Version = "dev.6ed4ed8"
+const Version = "dev.ad27072"
