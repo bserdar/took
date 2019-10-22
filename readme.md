@@ -43,7 +43,7 @@ authorization server based on a known server profile.
  * Assign a name to this authentication configuration
  * You need to enter the following options to create a new authentication configuration:
     * client id
-    * client secret
+    * client secret (not required for public clients)
     * callback url (not required for password grants)
     * whether the client will use password grants or not
 
@@ -76,7 +76,6 @@ method.
 Required options for oidc:
  * -n Name of the configuration. This is the 'myapi' parameter in the above examples
  * -c Client ID
- * -s Client secret
  * -u Server URL, including domain, excluding protocol specific paths
 
 
