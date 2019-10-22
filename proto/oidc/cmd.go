@@ -34,9 +34,6 @@ var oidcConnectWizard = []proto.SetupStep{
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientID }},
 	{Prompt: "Client secret:", Parse: func(in string) error {
 		in = strings.TrimSpace(in)
-		if len(in) == 0 {
-			return fmt.Errorf("Client secret is required")
-		}
 		oidcCfg.Cfg.ClientSecret = in
 		return nil
 	}, GetDefault: func(remoteCfg interface{}) string { return remoteCfg.(*Config).ClientSecret }},
@@ -70,8 +67,7 @@ func init() {
 
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientID, "clientId", "c", "", "Client ID (required)")
 		cmd.MarkFlagRequired("clientId")
-		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientSecret, "secret", "s", "", "Client Secret (required)")
-		cmd.MarkFlagRequired("secret")
+		cmd.Flags().StringVarP(&oidcCfg.Cfg.ClientSecret, "secret", "s", "", "Client Secret")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.CallbackURL, "callback-url", "b", "", "Callback URL")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.Profile, "server", "e", "", "Server profile to use. Either a server profile or the server URL must be given")
 		cmd.Flags().StringVarP(&oidcCfg.Cfg.URL, "url", "u", "", "Server URL. Either a server profile or server URL must be given")

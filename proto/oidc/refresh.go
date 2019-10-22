@@ -15,7 +15,9 @@ import (
 func RefreshToken(clientID, clientSecret, refreshToken, tokenURL string) (oauth2.Token, error) {
 	values := url.Values{}
 	values.Set("client_id", clientID)
-	values.Set("client_secret", clientSecret)
+	if len(clientSecret) > 0 {
+		values.Set("client_secret", clientSecret)
+	}
 	values.Set("refresh_token", refreshToken)
 	values.Set("grant_type", "refresh_token")
 	log.Debugf("Refresh %s %v", tokenURL, values)
