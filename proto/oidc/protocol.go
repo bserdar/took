@@ -123,7 +123,7 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	}
 
 	if userName == "" {
-		log.Fatalf("Username is required for oidc quth")
+		log.Fatalf("Username is required for oidc auth")
 		return "", nil, nil
 	}
 	var tok *TokenData
@@ -184,7 +184,14 @@ func (p *Protocol) GetToken(request proto.TokenRequest) (string, interface{}, er
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, proto.GetHTTPClient())
 	conf.Scopes = append(conf.Scopes, config.AdditionalScopes...)
 	log.Debugf("Password grant: %v", config.PasswordGrant)
-	if config.PasswordGrant != nil && *config.PasswordGrant {
+	if config.RefreshOnly != nil && *config.RefreshOnly {
+		tok.RefreshToken = cfg.AskPasswordWithPrompt(fmt.Sprintf("Refresh token for %s: ", userName))
+		err := p.Refresh(tok, serverData)
+		if err != nil {
+			return "", nil, err
+		}
+		return tok.FormatToken(request.Out), p.Tokens, nil
+	} else if config.PasswordGrant != nil && *config.PasswordGrant {
 		var password string
 		if len(request.Password) > 0 {
 			password = request.Password

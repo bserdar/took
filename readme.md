@@ -97,11 +97,22 @@ Took supports direct access grants. In this flow, took asks username and passwor
 them to the authentication server.
 
 ```
-  took add oidc -n prod-direct -c 12345 -s abcdef -u https://myserver/realms/myrealm -p
+  took add oidc -n prod-direct -c 12345 -s abcdef -u https://myserver/realms/myrealm -f pwd
 ```
 To use this, the authentication server must be configured to support 
 direct access grants flow for this client.
 
+## Refresh Token Flow
+
+Took supports using only refresh token grants. In this flow, took asks for a refresh token
+to send to the authentication server. This is commonly used in conjunction with
+offline refresh tokens.
+
+```
+  took add oidc -n prod-refresh -c 12345 -u https://myserver/realms/myrealm -f refresh
+```
+To use this, you must already have obtained a refresh token via some other means
+(usually from a web portal).
 
 # Multiple users 
 

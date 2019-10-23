@@ -8,6 +8,7 @@ type ServerProfile struct {
 	Form             *HTMLFormConfig `yaml:"form,omitempty" mapstructure:"form,omitempty"`
 	Insecure         bool
 	PasswordGrant    *bool    `yaml:"passwordgrant,omitempty"`
+	RefreshOnly      *bool    `yaml:"refreshonly,omitempty"`
 	AdditionalScopes []string `yaml:"additionalscopes,omitempty"`
 }
 
@@ -20,6 +21,10 @@ func (s ServerProfile) Merge(in ServerProfile) ServerProfile {
 	ret.PasswordGrant = s.PasswordGrant
 	if ret.PasswordGrant == nil {
 		ret.PasswordGrant = in.PasswordGrant
+	}
+	ret.RefreshOnly = s.RefreshOnly
+	if ret.RefreshOnly == nil {
+		ret.RefreshOnly = in.RefreshOnly
 	}
 	ret.Form = s.Form
 	if ret.Form == nil {
