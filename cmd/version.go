@@ -1,4 +1,4 @@
 package cmd
 
 // Version constant
-const Version = "v1.8.7"
+const Version = "1.9.0"
