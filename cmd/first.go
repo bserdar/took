@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/bserdar/took/cfg"
-	"github.com/bserdar/took/crypta"
+	"github.com/bserdar/took/crypto"
 )
 
 var firstRunRan bool
@@ -23,7 +23,7 @@ again:
 		if len(pwd) == 0 {
 			return
 		}
-		srv, err := crypta.InitServer(pwd)
+		srv, err := crypto.InitServer(pwd)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -15,8 +15,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	yml "gopkg.in/yaml.v2"
 
-	"github.com/bserdar/took/crypta"
-	"github.com/bserdar/took/crypta/rpc"
+	"github.com/bserdar/took/crypto"
+	"github.com/bserdar/took/crypto/rpc"
 )
 
 // UserCfg is the user's config
@@ -300,9 +300,9 @@ func AskPasswordStartDecrypt(timeout time.Duration, configFile string) {
 	StartDecrypt(AskPasswordWithPrompt("Configuration/Token encryption password: "), timeout, configFile)
 }
 
-//StartDecrypt starts another copy of took with decrypt x flag, and passes the password. Panics on fail
+// StartDecrypt starts another copy of took with decrypt x flag, and passes the password. Panics on fail
 func StartDecrypt(password string, timeout time.Duration, configFile string) {
-	_, err := crypta.NewServer(password, UserCfg.AuthKey)
+	_, err := crypto.NewServer(password, UserCfg.AuthKey)
 	if err != nil {
 		log.Fatal(err)
 	}

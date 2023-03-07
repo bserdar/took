@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/bserdar/took/cfg"
-	"github.com/bserdar/took/crypta"
-	"github.com/bserdar/took/crypta/rpc"
+	"github.com/bserdar/took/crypto"
+	"github.com/bserdar/took/crypto/rpc"
 )
 
 var decryptDur time.Duration
@@ -61,11 +61,11 @@ There is no way to revert this operation. Do you want to continue(y/N)?`)
 		if len(pwd) == 0 {
 			return
 		}
-		srv, err := crypta.InitServer(pwd)
+		srv, err := crypto.InitServer(pwd)
 		if err != nil {
 			log.Fatal(err)
 		}
-		rp := crypta.NewRequestProcessor(srv, nil, cfg.UserCfgFile)
+		rp := crypto.NewRequestProcessor(srv, nil, cfg.UserCfgFile)
 
 		cfg.UserCfg.AuthKey, err = srv.GetAuthKey()
 		if err != nil {
@@ -78,8 +78,8 @@ There is no way to revert this operation. Do you want to continue(y/N)?`)
 			if err != nil {
 				log.Fatal(err)
 			}
-			var rsp crypta.DataResponse
-			err = rp.Encrypt(crypta.DataRequest{Data: string(doc)}, &rsp)
+			var rsp crypto.DataResponse
+			err = rp.Encrypt(crypto.DataRequest{Data: string(doc)}, &rsp)
 			if err != nil {
 				log.Fatal(err)
 			}

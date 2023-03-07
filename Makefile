@@ -33,7 +33,7 @@ fmt:
 	  (echo >&2 "+ please format Go code with 'gofmt -s'" && false)
 	@test -z "$$(gofmt -s -l cmd 2>&1 |  tee /dev/stderr)" || \
 	  (echo >&2 "+ please format Go code with 'gofmt -s'" && false)
-	@test -z "$$(gofmt -s -l crypta 2>&1 | tee /dev/stderr)" || \
+	@test -z "$$(gofmt -s -l crypto 2>&1 | tee /dev/stderr)" || \
 	  (echo >&2 "+ please format Go code with 'gofmt -s'" && false)
 	@test -z "$$(gofmt -s -l proto 2>&1 |  tee /dev/stderr)" || \
 	  (echo >&2 "+ please format Go code with 'gofmt -s'" && false)
@@ -43,7 +43,7 @@ lint:
 	@echo "+ $@"
 	-$(GOLINT) cfg/...
 	-$(GOLINT) cmd/...
-	-$(GOLINT) crypta/...
+	-$(GOLINT) crypto/...
 	-$(GOLINT) proto/...
 
 build: ver fmt vet lint
